@@ -1,69 +1,52 @@
 -- Implicit CAD. Copyright (C) 2011, Christopher Olah (chris@colah.ca)
 -- Copyright 2014 2015 2016, Julia Longtin (julial@turinglace.com)
+-- Copyright 2017, Merlin Göttlinger (megoettlinger@gmail.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
--- Allow us to use explicit foralls when writing function type declarations.
-{-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE Rank2Types #-}
 
 module Graphics.Implicit.ExtOpenScad.Parser.Statement where
 
-import Prelude(Char, Either, String, Maybe(Just, Nothing), Monad, return, fmap, ($), (>>), Bool(False, True), map)
+import Prelude(Bool(False, True), Char, Either, String, Maybe(Just, Nothing), pure, ($), (<*), (*>), (<$>))
 
-import Text.ParserCombinators.Parsec (Column, GenParser, Line, SourceName, ParseError, char, eof, getPosition, many, many1, noneOf, optional, oneOf, parse, sepBy, sourceColumn, sourceLine, space, string, try, (<|>))
-
-import Text.Parsec.Prim (ParsecT)
-
-import Data.Functor.Identity(Identity)
+import Text.ParserCombinators.Parsec (Column, Line, SourceName, ParseError, eof, getPosition, many, many1, noneOf, optional, oneOf, parse, sepBy, sourceColumn, sourceLine, space, string, try, (<|>))
 
 import Graphics.Implicit.ExtOpenScad.Definitions (Pattern(Name), Statement(DoNothing, NewModule, Include, Echo, If, For, ModuleCall,(:=)),Expr(LamE), StatementI(StatementI))
-import Graphics.Implicit.ExtOpenScad.Parser.Util (genSpace, tryMany, stringGS, (*<|>), (?:), patternMatcher, variableSymb)
+import Graphics.Implicit.ExtOpenScad.Parser.Util (Parser, angles, braces, comma, commaSep, curly, equals, genSpace, tryMany, stringGS, pad, (*<|>), (?:), patternMatcher, variableSymb)
 import Graphics.Implicit.ExtOpenScad.Parser.Expr (expr0)
+
+
 
 parseProgram :: SourceName -> [Char] -> Either ParseError [StatementI]
 parseProgram name s = parse program name s where
-  program :: ParsecT [Char] u Identity [StatementI]
-  program = do
-    sts <- many1 computation
-    eof
-    return sts
+  program :: Parser [StatementI]
+  program = many1 computation <* eof
 
 -- | A in our programming openscad-like programming language.
-computation :: GenParser Char st StatementI
+computation :: Parser StatementI
 computation =
-  do -- suite statements: no semicolon...
-    _ <- genSpace
-    s <- tryMany [
-      ifStatementI,
-      forStatementI,
-      throwAway,
-      userModuleDeclaration{-,
-      unimplemented "mirror",
-      unimplemented "multmatrix",
-      unimplemented "color",
-      unimplemented "render",
-      unimplemented "surface",
-      unimplemented "projection",
-      unimplemented "import_stl"-}
-      -- rotateExtrude
-      ]
-    _ <- genSpace
-    return s
-  *<|> do -- Non suite s. Semicolon needed...
-    _ <- genSpace
-    s <- tryMany [
-      echo,
-      include,
-      function,
-      assignment--,
-      --use
-      ]
-    _ <- stringGS " ; "
-    return s
-  *<|> do -- Modules
-    _ <- genSpace
-    s <- userModule
-    _ <- genSpace
-    return s
+  pad $ tryMany [ -- suite statements: no semicolon...
+    ifStatementI,
+    forStatementI,
+    throwAway,
+    userModuleDeclaration{-,
+    unimplemented "mirror",
+    unimplemented "multmatrix",
+    unimplemented "color",
+    unimplemented "render",
+    unimplemented "surface",
+    unimplemented "projection",
+    unimplemented "import_stl"-}
+    -- rotateExtrude
+    ]
+  *<|> genSpace *> tryMany [ -- Non suite s. Semicolon needed...
+    echo,
+    include,
+    function,
+    assignment--,
+    --use
+    ] <* stringGS " ; "
+  *<|> pad userModule -- Modules
 
 {-
 -- | A suite of s!
@@ -82,170 +65,136 @@ computation =
 --  are in turn StatementI s.
 --  So this parses them.
 -}
-suite :: GenParser Char st [StatementI]
+suite :: Parser [StatementI]
 suite = "suite" ?: (
-  fmap return computation
-  <|> do
-      _ <- char '{'
-      _ <- genSpace
-      stmts <- many (try computation)
-      _ <- genSpace
-      _ <- char '}'
-      return stmts
+  (pure <$> computation)
+  <|> (curly $ pad $ many (try computation))
   )
 
 
 
-columnNumber :: Monad m => ParsecT s u m Column
-columnNumber = fmap sourceColumn getPosition
+columnNumber :: Parser Column
+columnNumber = sourceColumn <$> getPosition
 
-withLineNumber :: Monad m => ParsecT s u m (Statement StatementI) -> ParsecT s u m StatementI
+withLineNumber :: Parser (Statement StatementI) -> Parser StatementI
 withLineNumber e = do
   line <- lineNumber
   v <- e
-  return $ StatementI line v
+  pure $ StatementI line v
   where
-    lineNumber :: Monad m => ParsecT s u m Line
-    lineNumber = fmap sourceLine getPosition
+    lineNumber :: Parser Line
+    lineNumber = sourceLine <$> getPosition
 
-throwAway :: GenParser Char st StatementI
-throwAway = withLineNumber $ do
-  _ <- genSpace
-  _ <- oneOf "%*"
-  _ <- genSpace
-  _ <- computation
-  return $ DoNothing
+throwAway :: Parser StatementI
+throwAway = withLineNumber $ genSpace *> oneOf "%*" *> genSpace *> computation *> pure DoNothing
 
 -- An included ! Basically, inject another openscad file here...
-include :: GenParser Char st StatementI
+include :: Parser StatementI
 include = "include " ?: (withLineNumber $ do
-  injectVals <- (string "include" >> return True )
-                 <|> (string "use" >> return False)
-  _ <- stringGS " < "
-  filename <- many (noneOf "<> ")
-  _ <- stringGS " > "
-  return $ Include filename injectVals)
+  injectVals <- (string "include" *> pure True )
+                 <|> (string "use" *> pure False)
+  filename <- angles $ many (noneOf "<> ")
+  pure $ Include filename injectVals)
 
 -- | An assignment  (parser)
-assignment :: GenParser Char st StatementI
+assignment :: Parser StatementI
 assignment = "assignment " ?: (withLineNumber $ do
   pattern <- patternMatcher
-  _ <- stringGS " = "
+  _ <- equals
   valExpr <- expr0
-  return $ pattern := valExpr)
+  pure $ pattern := valExpr)
 
 -- | A function declaration (parser)
-function :: GenParser Char st StatementI
+function :: Parser StatementI
 function = "function " ?: (withLineNumber $ do
-  varSymb <- ((optional $ string "function" >> space) >> genSpace >> variableSymb)
-  _ <- stringGS " ( "
-  argVars <- sepBy patternMatcher (stringGS " , ")
-  _ <- stringGS " ) = "
-  valExpr <- expr0
-  return $ Name varSymb := LamE argVars valExpr)
+  varSymb <- ((optional $ string "function" *> space) *> genSpace *> variableSymb)
+  argVars <- braces $ commaSep patternMatcher
+  valExpr <- equals *> expr0
+  pure $ Name varSymb := LamE argVars valExpr)
 
 -- | An echo  (parser)
-echo :: GenParser Char st StatementI
-echo = "echo " ?: (withLineNumber $ do
-  _ <- stringGS "echo ( "
-  exprs <- expr0 `sepBy` (stringGS " , ")
-  _ <- stringGS " ) "
-  return $ Echo exprs)
+echo :: Parser StatementI
+echo = "echo " ?: (withLineNumber $ Echo <$> (stringGS "echo" *> (braces $ commaSep expr0)))
 
-ifStatementI :: GenParser Char st StatementI
+ifStatementI :: Parser StatementI
 ifStatementI = "if " ?: (withLineNumber $ do
-  _ <- stringGS "if ( "
-  bexpr <- expr0
-  _ <- stringGS " ) "
+  bexpr <- stringGS "if" *> braces expr0
   sTrueCase <- suite
   _ <- genSpace
-  sFalseCase <- (stringGS "else " >> suite ) *<|> (return [])
-  return $ If bexpr sTrueCase sFalseCase)
+  sFalseCase <- (stringGS "else " *> suite ) *<|> (pure [])
+  pure $ If bexpr sTrueCase sFalseCase)
 
-forStatementI :: GenParser Char st StatementI
+assignmentH :: Parser n -> Parser v -> Parser (n, v)
+assignmentH np vp = do
+  n <- np
+  _ <- equals
+  v <- vp
+  pure (n, v)
+
+patternExpr :: Parser (Pattern, Expr)
+patternExpr = assignmentH patternMatcher expr0
+
+forStatementI :: Parser StatementI
 forStatementI = "for " ?: (withLineNumber $ do
   -- a for loop is of the form:
   --      for ( vsymb = vexpr   ) loops
   -- eg.  for ( a     = [1,2,3] ) {echo(a);   echo "lol";}
   -- eg.  for ( [a,b] = [[1,2]] ) {echo(a+b); echo "lol";}
-  _ <- stringGS "for ( "
-  pattern <- patternMatcher
-  _ <- stringGS " = "
-  vexpr <- expr0
-  _ <- stringGS " ) "
+  (pattern, expr) <- stringGS "for" *> braces patternExpr
   loopContent <- suite
-  return $ For pattern vexpr loopContent)
+  pure $ For pattern expr loopContent)
 
-userModule :: GenParser Char st StatementI
+userModule :: Parser StatementI
 userModule = "user module " ?: (withLineNumber $ do
   name <- variableSymb
-  _ <- genSpace
-  args <- moduleArgsUnit
-  _ <- genSpace
-  s <- suite *<|> (stringGS " ; " >> return [])
-  return $ ModuleCall name args s)
+  args <- pad moduleArgsUnit
+  s <- suite *<|> (stringGS " ; " *> pure [])
+  pure $ ModuleCall name args s)
 
-userModuleDeclaration :: GenParser Char st StatementI
+userModuleDeclaration :: Parser StatementI
 userModuleDeclaration = "user module decl " ?: (withLineNumber $ do
-  _ <- stringGS "module "
-  newModuleName <- variableSymb
-  _ <- genSpace
-  args <- moduleArgsUnitDecl
-  _ <- genSpace
+  newModuleName <- stringGS "module " *> variableSymb
+  args <- pad moduleArgsUnitDecl
   s <- suite
-  return $ NewModule newModuleName args s)
+  pure $ NewModule newModuleName args s)
 
 ----------------------
 
-moduleArgsUnit :: GenParser Char st [(Maybe String, Expr)]
-moduleArgsUnit = "module args " ?: do
-  _ <- stringGS " ( "
-  args <- sepBy (
-    do
-      -- eg. a = 12
-      symb <- variableSymb
-      _ <- stringGS " = "
-      expr <- expr0
-      return $ (Just symb, expr)
-    *<|> do
-      -- eg. a(x,y) = 12
-      symb <- variableSymb
-      _ <- stringGS " ( "
-      argVars <- sepBy variableSymb (try $ stringGS " , ")
-      _ <- stringGS " ) = "
-      expr <- expr0
-      return $ (Just symb, LamE (map Name argVars) expr)
-    *<|> do
-      -- eg. 12
-      expr <- expr0
-      return (Nothing, expr)
-    ) (try $ stringGS " , ")
-  _ <- stringGS " ) "
-  return args
+moduleArgsUnit :: Parser [(Maybe String, Expr)]
+moduleArgsUnit = "module args " ?: (braces $ sepBy (
+  do
+    -- eg. a = 12
+    (symb, expr) <- assignmentH variableSymb expr0
+    pure $ (Just symb, expr)
+  *<|> do
+    -- eg. a(x,y) = 12
+    symb <- variableSymb
+    argVars <- braces $ sepBy variableSymb (try $ stringGS " , ")
+    _ <- equals
+    expr <- expr0
+    pure $ (Just symb, LamE (Name <$> argVars) expr)
+  *<|> do
+    -- eg. 12
+    expr <- expr0
+    pure (Nothing, expr)
+  ) (try comma))
 
-moduleArgsUnitDecl ::  GenParser Char st [(String, Maybe Expr)]
-moduleArgsUnitDecl = do
-    _ <- stringGS " ( "
-    argTemplate <- sepBy (
-        do
-            symb <- variableSymb;
-            _ <- stringGS " = "
-            expr <- expr0
-            return (symb, Just expr)
-        *<|> do
-            symb <- variableSymb;
-            _ <- stringGS " ( "
-                 -- FIXME: why match this content, then drop it?
-            _ <- sepBy variableSymb (try $ stringGS " , ")
-            _ <- stringGS " ) = "
-            expr <- expr0
--- FIXME: this line looks right, but.. what does this change?
---            return $ (Just symb, LamE (map Name argVars) expr)
-            return (symb, Just expr)
-        *<|> do
-            symb <- variableSymb
-            return (symb, Nothing)
-        ) (try $ stringGS " , ")
-    _ <- stringGS " ) "
-    return argTemplate
+moduleArgsUnitDecl :: Parser [(String, Maybe Expr)]
+moduleArgsUnitDecl = braces $ sepBy (
+  do
+    (symb, expr) <- assignmentH variableSymb expr0
+    pure (symb, Just expr)
+  *<|> do
+    symb <- variableSymb;
+    -- FIXME: why match this content, then drop it?
+    _ <- braces $ sepBy variableSymb (try comma)
+    _ <- equals
+    expr <- expr0
+    -- FIXME: this line looks right, but.. what does this change?
+    --            pure $ (Just symb, LamE (map Name argVars) expr)
+    pure (symb, Just expr)
+  *<|> do
+    symb <- variableSymb
+    pure (symb, Nothing)
+  ) (try comma)
 
