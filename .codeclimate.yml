@@ -1,6 +1,6 @@
-engines:
+plugins:
   hlint:
     enabled: true
-  ratings:
-    paths:
-      - "**.hs"
+ratings:
+  paths:
+    - "**.hs"
