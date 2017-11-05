@@ -7,7 +7,7 @@
 
 module Graphics.Implicit.ExtOpenScad.Parser.Statement where
 
-import Prelude(Bool(False, True), Char, Either, String, Maybe(Just, Nothing), pure, ($), (<*), (*>), (<$>))
+import Prelude(Bool(False, True), Either, String, Maybe(Just, Nothing), pure, ($), (<*), (*>), (<*>), (<$>))
 
 import Text.ParserCombinators.Parsec (Column, Line, SourceName, ParseError, eof, getPosition, many, many1, noneOf, optional, oneOf, parse, sepBy, sourceColumn, sourceLine, space, string, try, (<|>))
 
@@ -17,10 +17,11 @@ import Graphics.Implicit.ExtOpenScad.Parser.Expr (expr0)
 
 
 
-parseProgram :: SourceName -> [Char] -> Either ParseError [StatementI]
-parseProgram name s = parse program name s where
-  program :: Parser [StatementI]
-  program = many1 computation <* eof
+parseProgram :: SourceName -> String -> Either ParseError [StatementI]
+parseProgram = parse program
+  where
+    program :: Parser [StatementI]
+    program = many1 computation <* eof
 
 -- | A in our programming openscad-like programming language.
 computation :: Parser StatementI
@@ -68,7 +69,7 @@ computation =
 suite :: Parser [StatementI]
 suite = "suite" ?: (
   (pure <$> computation)
-  <|> (curly $ pad $ many (try computation))
+  <|> curly (pad $ many (try computation))
   )
 
 
@@ -77,20 +78,20 @@ columnNumber :: Parser Column
 columnNumber = sourceColumn <$> getPosition
 
 withLineNumber :: Parser (Statement StatementI) -> Parser StatementI
-withLineNumber e = do
-  line <- lineNumber
-  v <- e
-  pure $ StatementI line v
+withLineNumber e = StatementI <$> lineNumber <*> e
   where
     lineNumber :: Parser Line
     lineNumber = sourceLine <$> getPosition
+
+namedWithLN :: String -> Parser (Statement StatementI) -> Parser StatementI
+namedWithLN n e = n ?: withLineNumber e
 
 throwAway :: Parser StatementI
 throwAway = withLineNumber $ genSpace *> oneOf "%*" *> genSpace *> computation *> pure DoNothing
 
 -- An included ! Basically, inject another openscad file here...
 include :: Parser StatementI
-include = "include " ?: (withLineNumber $ do
+include = namedWithLN "include " (do
   injectVals <- (string "include" *> pure True )
                  <|> (string "use" *> pure False)
   filename <- angles $ many (noneOf "<> ")
@@ -98,30 +99,26 @@ include = "include " ?: (withLineNumber $ do
 
 -- | An assignment  (parser)
 assignment :: Parser StatementI
-assignment = "assignment " ?: (withLineNumber $ do
-  pattern <- patternMatcher
-  _ <- equals
-  valExpr <- expr0
-  pure $ pattern := valExpr)
+assignment = namedWithLN "assignment " ((:=) <$> patternMatcher <*> (equals *> expr0))
 
 -- | A function declaration (parser)
 function :: Parser StatementI
-function = "function " ?: (withLineNumber $ do
-  varSymb <- ((optional $ string "function" *> space) *> genSpace *> variableSymb)
+function = namedWithLN "function " (do
+  varSymb <- optional (string "function" *> space) *> genSpace *> variableSymb
   argVars <- braces $ commaSep patternMatcher
   valExpr <- equals *> expr0
   pure $ Name varSymb := LamE argVars valExpr)
 
 -- | An echo  (parser)
 echo :: Parser StatementI
-echo = "echo " ?: (withLineNumber $ Echo <$> (stringGS "echo" *> (braces $ commaSep expr0)))
+echo = namedWithLN "echo " (Echo <$> (stringGS "echo" *> braces (commaSep expr0)))
 
 ifStatementI :: Parser StatementI
-ifStatementI = "if " ?: (withLineNumber $ do
+ifStatementI = namedWithLN "if " (do
   bexpr <- stringGS "if" *> braces expr0
   sTrueCase <- suite
   _ <- genSpace
-  sFalseCase <- (stringGS "else " *> suite ) *<|> (pure [])
+  sFalseCase <- (stringGS "else " *> suite ) *<|> pure []
   pure $ If bexpr sTrueCase sFalseCase)
 
 assignmentH :: Parser n -> Parser v -> Parser (n, v)
@@ -135,24 +132,24 @@ patternExpr :: Parser (Pattern, Expr)
 patternExpr = assignmentH patternMatcher expr0
 
 forStatementI :: Parser StatementI
-forStatementI = "for " ?: (withLineNumber $ do
+forStatementI = namedWithLN "for " (do
   -- a for loop is of the form:
   --      for ( vsymb = vexpr   ) loops
   -- eg.  for ( a     = [1,2,3] ) {echo(a);   echo "lol";}
   -- eg.  for ( [a,b] = [[1,2]] ) {echo(a+b); echo "lol";}
-  (pattern, expr) <- stringGS "for" *> braces patternExpr
+  (pat, expr) <- stringGS "for" *> braces patternExpr
   loopContent <- suite
-  pure $ For pattern expr loopContent)
+  pure $ For pat expr loopContent)
 
 userModule :: Parser StatementI
-userModule = "user module " ?: (withLineNumber $ do
+userModule = namedWithLN "user module " (do
   name <- variableSymb
   args <- pad moduleArgsUnit
   s <- suite *<|> (stringGS " ; " *> pure [])
   pure $ ModuleCall name args s)
 
 userModuleDeclaration :: Parser StatementI
-userModuleDeclaration = "user module decl " ?: (withLineNumber $ do
+userModuleDeclaration = namedWithLN "user module decl " (do
   newModuleName <- stringGS "module " *> variableSymb
   args <- pad moduleArgsUnitDecl
   s <- suite
@@ -161,18 +158,18 @@ userModuleDeclaration = "user module decl " ?: (withLineNumber $ do
 ----------------------
 
 moduleArgsUnit :: Parser [(Maybe String, Expr)]
-moduleArgsUnit = "module args " ?: (braces $ sepBy (
+moduleArgsUnit = "module args " ?: braces (sepBy (
   do
     -- eg. a = 12
     (symb, expr) <- assignmentH variableSymb expr0
-    pure $ (Just symb, expr)
+    pure (Just symb, expr)
   *<|> do
     -- eg. a(x,y) = 12
     symb <- variableSymb
     argVars <- braces $ sepBy variableSymb (try $ stringGS " , ")
     _ <- equals
     expr <- expr0
-    pure $ (Just symb, LamE (Name <$> argVars) expr)
+    pure (Just symb, LamE (Name <$> argVars) expr)
   *<|> do
     -- eg. 12
     expr <- expr0
