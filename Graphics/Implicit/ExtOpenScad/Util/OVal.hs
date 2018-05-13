@@ -12,12 +12,11 @@
 
 module Graphics.Implicit.ExtOpenScad.Util.OVal where
 
-import Prelude(Maybe(Just, Nothing), Bool(True, False), Either(Left,Right), String, Char, (==), fromInteger, floor, ($), (.), map, error, (++), show, fromIntegral, head, flip, filter, not, return)
+import Prelude(Maybe(Just, Nothing), Bool(True, False), Either(Left,Right), String, Char, (==), fromInteger, floor, ($), (.), map, error, (++), show, fromIntegral, head, flip, filter, maybe, not, return)
 
 import Graphics.Implicit.Definitions(ℝ, ℕ, SymbolicObj2, SymbolicObj3)
 import Graphics.Implicit.ExtOpenScad.Definitions (OVal(ONum, OBool, OString, OList, OFunc, OUndefined, OModule, OError, OObj2, OObj3))
 import qualified Control.Monad as Monad
-import Data.Maybe (fromJust, isJust)
 
 -- for some minimal paralellism.
 import Control.Parallel.Strategies(runEval, rpar, rseq)
@@ -65,7 +64,7 @@ instance {-# Overlappable #-} forall a. (OTypeMirror a) => OTypeMirror [a] where
 #else
 instance forall a. (OTypeMirror a) => OTypeMirror [a] where
 #endif
-    fromOObj (OList list) = Monad.sequence . map fromOObj $ list
+    fromOObj (OList list) = Monad.mapM fromOObj $ list
     fromOObj _ = Nothing
     toOObj list = OList $ map toOObj list
 
@@ -137,9 +136,7 @@ infixr 2 <||>
         coerceAttempt :: Maybe desiredType
         coerceAttempt = fromOObj input
     in
-        if isJust coerceAttempt -- ≅ (/= Nothing) but no Eq req
-        then f $ fromJust coerceAttempt
-        else g input
+        maybe (g input) f coerceAttempt -- ≅ (/= Nothing) but no Eq req
 
 divideObjs :: [OVal] -> ([SymbolicObj2], [SymbolicObj3], [OVal])
 divideObjs children =

@@ -5,7 +5,7 @@
 -- Allow us to use explicit foralls when writing function type declarations.
 {-# LANGUAGE ExplicitForAll #-}
 
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- A Snap(HTTP) server providing an ImplicitCAD REST API.
 
@@ -59,12 +59,12 @@ renderHandler = method GET $ withCompression $ do
     modifyResponse $ setContentType "application/x-javascript"
     request <- getRequest
     case (rqParam "source" request, rqParam "callback" request, rqParam "format" request)  of
-        (Just [source], Just [callback], Nothing) -> do
+        (Just [source], Just [callback], Nothing) ->
             writeBS $ BS.Char.pack $ executeAndExport
                 (BS.Char.unpack source)
                 (BS.Char.unpack callback)
                 Nothing
-        (Just [source], Just [callback], Just [format]) -> do
+        (Just [source], Just [callback], Just [format]) ->
             writeBS $ BS.Char.pack $ executeAndExport
                 (BS.Char.unpack source)
                 (BS.Char.unpack callback)

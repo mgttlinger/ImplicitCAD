@@ -30,11 +30,10 @@ svg plines = renderSvg . svg11 . svg' $ plines
            where margin = strokeWidth / 2
                  (xs,ys) = unzip (concat plines)
       
-      svg11 content = docTypeSvg ! A.version "1.1" 
-                                 ! A.width  (stringValue $ show (xmax-xmin) ++ "mm")
-                                 ! A.height (stringValue $ show (ymax-ymin) ++ "mm")
-                                 ! A.viewbox (stringValue $ unwords . map show $ [0,0,xmax-xmin,ymax-ymin])
-                                 $ content
+      svg11 = docTypeSvg ! A.version "1.1" 
+              ! A.width  (stringValue $ show (xmax-xmin) ++ "mm")
+              ! A.height (stringValue $ show (ymax-ymin) ++ "mm")
+              ! A.viewbox (stringValue $ unwords . map show $ [0,0,xmax-xmin,ymax-ymin])
       -- The reason this isn't totally straightforwards is that svg has different coordinate system
       -- and we need to compute the requisite translation.
       svg' [] = mempty 

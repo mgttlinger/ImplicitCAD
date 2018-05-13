@@ -14,7 +14,7 @@ module Graphics.Implicit.ExtOpenScad.Definitions (ArgParser(AP, APTest, APBranch
                                                   TestInvariant(EulerCharacteristic),
                                                   collector) where
 
-import Prelude(Eq, Show, String, Maybe, Bool(True, False), Int, IO, (==), show, map, ($), (++), undefined, all, id, zipWith, foldl1)
+import Prelude(Eq, Show, String, Maybe, Bool(True, False), Int, IO, (==), and, show, map, ($), (++), undefined, zipWith, foldl1)
 
 import Graphics.Implicit.Definitions (ℝ, SymbolicObj2, SymbolicObj3)
 
@@ -118,7 +118,7 @@ data OVal = OUndefined
 instance Eq OVal where
     (OBool a) == (OBool b) = a == b
     (ONum  a) == (ONum  b) = a == b
-    (OList a) == (OList b) = all id $ zipWith (==) a b
+    (OList a) == (OList b) = and $ zipWith (==) a b
     (OString a) == (OString b) = a == b
     _ == _ = False
 

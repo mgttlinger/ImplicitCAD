@@ -17,6 +17,7 @@ import Graphics.Implicit.ExtOpenScad.Definitions(VarLookup, OVal(OList, ONum, OS
 import Graphics.Implicit.ExtOpenScad.Util.OVal (toOObj, oTypeStr)
 import Graphics.Implicit.ExtOpenScad.Primitives (primitives)
 import Data.Map (fromList)
+import Control.Arrow (second)
 
 defaultObjects :: VarLookup -- = Map String OVal
 defaultObjects = fromList $
@@ -79,7 +80,7 @@ defaultFunctionsSpecial =
 
 defaultModules :: [(String, OVal)]
 defaultModules =
-    map (\(a,b) -> (a, OModule b)) primitives
+    map (second OModule) primitives
 
 
 
@@ -186,21 +187,21 @@ defaultPolymorphicFunctions =
             in if n < length s then OString [s !! n] else OError ["List accessd out of bounds"]
         index a b = errorAsAppropriate "index" a b
 
-        osplice (OList  list) (ONum a) (    ONum b    ) =
+        osplice (OList  list) (ONum a) (ONum b) =
             OList   $ splice list (floor a) (floor b)
-        osplice (OString str) (ONum a) (    ONum b    ) =
+        osplice (OString str) (ONum a) (ONum b) =
             OString $ splice str  (floor a) (floor b)
-        osplice (OList  list) (OUndefined) (ONum b    ) =
+        osplice (OList  list) OUndefined (ONum b) =
             OList   $ splice list 0 (floor b)
-        osplice (OString str) (OUndefined) (ONum b    ) =
+        osplice (OString str) OUndefined (ONum b) =
             OString $ splice str  0 (floor b)
-        osplice (OList  list) (ONum a) (    OUndefined) =
+        osplice (OList  list) (ONum a) OUndefined =
             OList   $ splice list (floor a) (length list + 1)
-        osplice (OString str) (ONum a) (    OUndefined) =
+        osplice (OString str) (ONum a) OUndefined =
             OString $ splice str  (floor a) (length str  + 1)
-        osplice (OList  list) (OUndefined) (OUndefined) =
+        osplice (OList  list) OUndefined OUndefined =
             OList   $ splice list 0 (length list + 1)
-        osplice (OString str) (OUndefined) (OUndefined) =
+        osplice (OString str) OUndefined OUndefined =
             OString $ splice str  0 (length str  + 1)
         osplice _ _ _ = OUndefined
 

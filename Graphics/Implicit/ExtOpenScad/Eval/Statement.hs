@@ -2,7 +2,7 @@
 -- Copyright 2014 2015 2016, Julia Longtin (julial@turinglace.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
-{-# LANGUAGE ViewPatterns, ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Graphics.Implicit.ExtOpenScad.Eval.Statement where
 

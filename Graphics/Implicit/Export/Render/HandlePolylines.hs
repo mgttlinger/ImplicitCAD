@@ -7,7 +7,7 @@
 
 module Graphics.Implicit.Export.Render.HandlePolylines (cleanLoopsFromSegs, reducePolyline) where
 
-import Prelude(Bool(False), Maybe(Just, Nothing), map, (.), filter, (==), last, reverse, ($), (++), tail, (-), (/), abs, (<=), (||), (&&), (*), (>), not, null)
+import Prelude(Bool(False), Maybe(Just, Nothing), otherwise, map, (.), filter, (==), last, reverse, ($), (++), tail, (-), (/), abs, (<=), (||), (&&), (*), (>), not, null)
 
 import Graphics.Implicit.Definitions (minℝ, Polyline, ℝ)
 
@@ -21,11 +21,13 @@ joinSegs :: [Polyline] -> [Polyline]
 joinSegs [] = []
 joinSegs (present:remaining) =
     let
-        findNext ((p3:ps):segs) = if p3 == last present then (Just (p3:ps), segs) else
-            if last ps == last present then (Just (reverse $ p3:ps), segs) else
-            case findNext segs of (res1,res2) -> (res1,(p3:ps):res2)
+        findNext ((p3 : ps) : segs)
+          | p3 == last present = (Just (p3 : ps), segs)
+          | last ps == last present = (Just (reverse $ p3 : ps), segs)
+          | otherwise =
+            case findNext segs of (res1,res2) -> (res1,(p3 : ps) : res2)
         findNext [] = (Nothing, [])
-        findNext (([]):_) = (Nothing, [])
+        findNext ([] : _) = (Nothing, [])
     in
         case findNext remaining of
             (Nothing, _) -> present:(joinSegs remaining)

@@ -37,7 +37,7 @@ import Graphics.Implicit.ExtOpenScad.Definitions (OVal (ONum))
 -- Operator to subtract two points. Used when defining the resolution of a 2d object.
 import Data.AffineSpace ((.-.))
 
-import Data.Monoid (Monoid, mappend, mconcat)
+import Data.Monoid (Monoid, mappend)
 
 import Control.Applicative ((<$>), (<*>))
 
@@ -88,7 +88,7 @@ formatExtensions =
 -- Lookup an output format for a given output file. Throw an error if one cannot be found.
 guessOutputFormat :: FilePath -> OutputFormat
 guessOutputFormat fileName =
-    maybe (error $ "Unrecognized output format: "<>ext) id
+    fromMaybe (error $ "Unrecognized output format: " <> ext)
     $ readOutputFormat $ tail ext
     where
         (_,ext) = splitExtension fileName
@@ -202,10 +202,10 @@ run args = do
     putStrLn $ "Processing File."
 
     case runOpenscad content of
-        Left err -> putStrLn $ show $ err
+        Left err -> print err
         Right openscadProgram -> do
             s@(_, obj2s, obj3s) <- openscadProgram
-            let res = maybe (getRes s) id (resolution args)
+            let res = fromMaybe (getRes s) (resolution args)
             let basename = fst (splitExtension $ inputFile args)
             let posDefExt = case format of
                                 Just f  -> Prelude.lookup f (map swap formatExtensions)
@@ -218,7 +218,7 @@ run args = do
                     putStrLn $ "Rendering 3D object to " ++ output
                     putStrLn $ "With resolution " ++ show res
                     putStrLn $ "In box " ++ show (getBox3 obj)
-                    putStrLn $ show obj
+                    print obj
                     export3 format res output obj
                 ([obj], []) -> do
                     let output = fromMaybe
@@ -227,7 +227,7 @@ run args = do
                     putStrLn $ "Rendering 2D object to " ++ output
                     putStrLn $ "With resolution " ++ show res
                     putStrLn $ "In box " ++ show (getBox2 obj)
-                    putStrLn $ show obj
+                    print obj
                     export2 format res output obj
                 ([], []) -> putStrLn "No objects to render."
                 _        -> putStrLn "Multiple/No objects, what do you want to render?"

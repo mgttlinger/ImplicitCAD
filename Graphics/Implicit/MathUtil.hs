@@ -9,11 +9,11 @@
 module Graphics.Implicit.MathUtil (rmax, rmaximum, rminimum, distFromLineSeg, pack, box3sWithin) where
 
 -- Explicitly include what we need from Prelude.
-import Prelude (Bool, Num, Ord, Ordering, (>), (<), (+), ($), (/), otherwise, not, (||), (&&), abs, (-), (*), sin, asin, pi, max, sqrt, min, compare, (<=), fst, snd, (++))
+import Prelude (Bool, Num, Ord, Ordering, (>), (<), (+), ($), (/), otherwise, not, (||), (&&), abs, (-), (*), sin, asin, pi, max, sqrt, min, compare, (<=), fst, snd, flip, (++))
 
 import Graphics.Implicit.Definitions (ℝ, ℝ2, ℝ3, Box2, (⋅))
 
-import Data.List (sort, sortBy, reverse, (!!))
+import Data.List (sort, sortBy, (!!))
 import Data.VectorSpace (magnitude, normalized, (^-^), (^+^), (*^))
 import Data.AffineSpace ((.-.))
 
@@ -74,7 +74,7 @@ rmaximum _ (a:[]) = a
 rmaximum r (a:b:[]) = rmax r a b
 rmaximum r l =
     let
-        tops = reverse $ sort l
+        tops = sortBy (flip compare) l
     in
         rmax r (tops !! 0) (tops !! 1)
 

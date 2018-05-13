@@ -35,7 +35,7 @@ class DiscreteAproxable obj aprox where
     discreteAprox :: ℝ -> obj -> aprox
 
 instance DiscreteAproxable SymbolicObj3 TriangleMesh where
-    discreteAprox res obj = symbolicGetMesh res obj
+    discreteAprox = symbolicGetMesh
 
 instance DiscreteAproxable SymbolicObj3 NormedTriangleMesh where
     discreteAprox res obj = map (normTriangle res (getImplicit3 obj)) $ symbolicGetMesh res obj
@@ -76,7 +76,7 @@ instance DiscreteAproxable SymbolicObj3 DynamicImage where
                         ]
 
 instance DiscreteAproxable SymbolicObj2 [Polyline] where
-    discreteAprox res obj = symbolicGetContour res obj
+    discreteAprox = symbolicGetContour
 
 instance DiscreteAproxable SymbolicObj2 DynamicImage where
     discreteAprox _ symbObj = dynamicImage $ generateImage pixelRenderer (round w) (round h)
@@ -91,7 +91,7 @@ instance DiscreteAproxable SymbolicObj2 DynamicImage where
                 where
                     xy a b = ((x1,y2) .-^ (dxy-dx, dy-dxy)^/2) .+^ dxy*^(a/w, -b/h)
                     s = 0.25 :: ℝ
-                    (a', b') = (realToFrac mya, realToFrac myb) :: (ℝ2)
+                    (a', b') = (realToFrac mya, realToFrac myb) :: ℝ2
                     mycolor = average [objColor $ xy a' b', objColor $ xy a' b',
                         objColor $ xy (a'+s) (b'+s),
                         objColor $ xy (a'-s) (b'-s),

@@ -7,7 +7,7 @@
 
 -- FIXME: required. why?
 {-# LANGUAGE KindSignatures, FlexibleContexts #-}
-{-# LANGUAGE ViewPatterns, RankNTypes, ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
 
 module Graphics.Implicit.ExtOpenScad.Util.StateC (getVarLookup, modifyVarLookup, lookupVar, pushVals, getVals, putVals, withPathShiftedBy, getPath, getRelPath, errorC, mapMaybeM, StateC) where
 

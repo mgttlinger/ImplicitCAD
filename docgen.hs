@@ -1,7 +1,7 @@
 -- Implicit CAD. Copyright (C) 2011, Christopher Olah (chris@colah.ca)
 -- Released under the GNU GPL, see LICENSE
 
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, FlexibleContexts, TypeSynonymInstances, UndecidableInstances, ScopedTypeVariables  #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FlexibleContexts, TypeSynonymInstances, UndecidableInstances, ScopedTypeVariables  #-}
 
 -- FIXME: this doesn't work. looks like it broke badly when ArgParser became a Monad.
 
@@ -18,7 +18,7 @@ isArgument _ = False
 
 main = do
 	let names = map fst primitives
-	docs <- sequence $ map (getArgParserDocs.($ []).snd) primitives
+	docs <- mapM (getArgParserDocs . ($ []) . snd) primitives
 
 	forM_ (zip names docs) $ \(moduleName, moduleDocList) -> do
 		let
@@ -27,17 +27,14 @@ main = do
 		putStrLn moduleName
 		putStrLn (map (const '-') moduleName)
 		putStrLn ""
-		if not $ null examples then putStrLn "**Examples:**\n" else return ()
-		forM_ examples $ \(ExampleDoc example) -> do
-			putStrLn $ "   * `" ++ example ++ "`"
+		when (not $ null examples) $ putStrLn "**Examples:**\n"
+		forM_ examples $ \(ExampleDoc example) -> putStrLn $ "   * `" ++ example ++ "`"
 		putStrLn ""
 		putStrLn "**Arguments:**\n"
 		forM_ arguments $ \(ArgumentDoc name posfallback description) ->
 			case (posfallback, description) of
-				(Nothing, "") -> do
-					putStrLn $ "   * `" ++ name  ++ "`"
-				(Just fallback, "") -> do
-					putStrLn $ "   * `" ++ name ++ " = " ++ fallback ++ "`"
+				(Nothing, "") -> putStrLn $ "   * `" ++ name  ++ "`"
+				(Just fallback, "") -> putStrLn $ "   * `" ++ name ++ " = " ++ fallback ++ "`"
 				(Nothing, _) -> do
 					putStrLn $ "   * `" ++ name ++ "`"
 					putStrLn $ "     " ++ description

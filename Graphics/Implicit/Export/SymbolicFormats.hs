@@ -138,7 +138,7 @@ buildS2 (Translate2 (x,y) obj) = call "translate" [bf x, bf y] $ [buildS2 obj]
 
 buildS2 (Scale2 (x,y) obj)     = call "scale" [bf x, bf y] $ [buildS2 obj]
 
-buildS2 (Rotate2 (r) obj)     = call "rotate" [bf (rad2deg r)] $ [buildS2 obj]
+buildS2 (Rotate2 r obj)     = call "rotate" [bf (rad2deg r)] $ [buildS2 obj]
 
 buildS2 (Outset2 r obj) | r == 0 = call "outset" [] $ [buildS2 obj]
 

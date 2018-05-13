@@ -4,7 +4,7 @@
 
 module Graphics.Implicit.ExtOpenScad.Eval.Expr (evalExpr, matchPat) where
 
-import Prelude (String, Maybe(Just, Nothing), IO, concat, ($), map, return, zip, (==), (!!), const, (++), foldr, concatMap)
+import Prelude (String, Maybe(Just, Nothing), IO, concat, ($), map, return, zip, (!!), const, (++), foldr, concatMap)
 
 import Graphics.Implicit.ExtOpenScad.Definitions (
                                                   Pattern(Name, ListP, Wild),
@@ -15,7 +15,7 @@ import Graphics.Implicit.ExtOpenScad.Definitions (
 import Graphics.Implicit.ExtOpenScad.Util.OVal (oTypeStr, getErrors)
 import Graphics.Implicit.ExtOpenScad.Util.StateC (StateC, getVarLookup)
 
-import Data.List (findIndex)
+import Data.List (elemIndex)
 import Data.Map (fromList, lookup)
 import Control.Monad (zipWithM, mapM, forM)
 import Control.Monad.State (StateT, get, modify, liftIO, runStateT)
@@ -54,7 +54,7 @@ evalExpr' :: Expr -> StateT (VarLookup, [String]) IO ([OVal] -> OVal)
 evalExpr' (Var   name ) = do
     (varlookup, namestack) <- get
     return $
-        case (lookup name varlookup, findIndex (==name) namestack) of
+        case (lookup name varlookup, elemIndex name namestack) of
             (_, Just pos) -> \s -> s !! pos
             (Just val, _) -> const val
             _             -> const $ OError ["Variable " ++ name ++ " not in scope" ]

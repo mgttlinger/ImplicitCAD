@@ -26,7 +26,7 @@ getContour p1 p2 d obj =
     let
         -- How many steps will we take on each axis?
         n :: (Int, Int)
-        n =  (ceiling) `both` ((p2 ^-^ p1) ⋯/ d)
+        n =  ceiling `both` ((p2 ^-^ p1) ⋯/ d)
         nx = fst n
         ny = snd n
         -- Divide it up and compute the polylines
@@ -117,11 +117,11 @@ getSquareLineSegs (x1, y1) (x2, y2) obj =
         midy2 = (x + dx*x1y2/(x1y2-x2y2), y + dy)
         notPointLine :: Eq a => [a] -> Bool
         notPointLine (p1:p2:[]) = p1 /= p2
-        notPointLine ([]) = False
-        notPointLine ([_]) = False
+        notPointLine [] = False
+        notPointLine [_] = False
         notPointLine (_ : (_ : (_ : _))) = False
-    in filter (notPointLine) $ case (x1y2 <= 0, x2y2 <= 0,
-                                     x1y1 <= 0, x2y1 <= 0) of
+    in filter notPointLine $ case (x1y2 <= 0, x2y2 <= 0,
+                                    x1y1 <= 0, x2y1 <= 0) of
         -- Yes, there's some symetries that could reduce the amount of code...
         -- But I don't think they're worth exploiting...
         (True,  True,
@@ -187,7 +187,7 @@ orderLinesDC segs =
     let
         halve :: [a] -> ([a], [a])
         halve l = splitAt (div (length l) 2) l
-        splitOrder segs' = case (\(x,y) -> (halve x, halve y)) . unzip . map (halve) $ segs' of
+        splitOrder segs' = case (\(x,y) -> (halve x, halve y)) . unzip . map halve $ segs' of
             ((a,b),(c,d)) -> orderLinesDC a ++ orderLinesDC b ++ orderLinesDC c ++ orderLinesDC d
     in
         if (length segs < 5 || length (head segs) < 5 ) then concat $ concat segs else
