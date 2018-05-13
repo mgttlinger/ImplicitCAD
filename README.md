@@ -1,5 +1,6 @@
 ImplicitCAD: Math Inspired CAD
 ==============================
+[![Build Status](https://travis-ci.org/mgttlinger/ImplicitCAD.svg?branch=master)](https://travis-ci.org/mgttlinger/ImplicitCAD)
 
 Introduction
 ------------
