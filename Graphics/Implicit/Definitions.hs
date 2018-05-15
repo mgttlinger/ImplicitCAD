@@ -6,7 +6,6 @@
 -- This module deliberately declares orphan instances of Show.
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
--- Required. FIXME: why?
 {-# LANGUAGE FlexibleInstances #-}
 
 -- Definitions of the types used when modeling, and a few operators.

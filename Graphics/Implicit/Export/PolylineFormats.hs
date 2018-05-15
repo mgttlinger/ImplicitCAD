@@ -2,9 +2,6 @@
 -- Copyright (C) 2016, Julia Longtin (julial@turinglace.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
--- Allow us to use explicit foralls when writing function type declarations.
-{-# LANGUAGE ExplicitForAll #-}
-
 {-# LANGUAGE OverloadedStrings #-}
 
 module Graphics.Implicit.Export.PolylineFormats where
@@ -26,7 +23,7 @@ svg :: [Polyline] -> Text
 svg plines = renderSvg . svg11 . svg' $ plines
     where
       strokeWidth = 1.0
-      (xmin, xmax, ymin, ymax) = ((minimum xs) - margin, (maximum xs) + margin, (minimum ys) - margin, (maximum ys) + margin)
+      (xmin, xmax, ymin, ymax) = (minimum xs - margin, maximum xs + margin, minimum ys - margin, maximum ys + margin)
            where margin = strokeWidth / 2
                  (xs,ys) = unzip (concat plines)
       
@@ -50,15 +47,15 @@ hacklabLaserGCode :: [Polyline] -> Text
 hacklabLaserGCode polylines = toLazyText $ gcodeHeader <> mconcat (map interpretPolyline orderedPolylines) <> gcodeFooter
     where 
       orderedPolylines =
-            snd . unzip 
+            (map snd . 
             . List.sortBy (\(a,_) (b, _) -> compare a b)
-            . map (\x -> (polylineRadius x, x))
-            $ polylines
-      polylineRadius :: forall t. (Ord t, Num t) => [(t, t)] -> t
+            . map (\x -> (polylineRadius x, x)))
+            polylines
+      polylineRadius :: (Ord t, Num t) => [(t, t)] -> t
       polylineRadius [] = 0
       polylineRadius polyline' = max (xmax' - xmin') (ymax' - ymin') where
            ((xmin', xmax'), (ymin', ymax')) = polylineRadius' polyline'
-           polylineRadius' :: forall a a1. (Ord a1, Ord a, Num a1, Num a) => [(a, a1)] -> ((a, a), (a1, a1))
+           polylineRadius' :: (Ord a1, Ord a, Num a1, Num a) => [(a, a1)] -> ((a, a), (a1, a1))
            polylineRadius' [] = ((0,0),(0,0))
            polylineRadius' [(x,y)] = ((x,x),(y,y))
            polylineRadius' ((x,y):ps) = ((min x xmin,max x xmax),(min y ymin, max y ymax))

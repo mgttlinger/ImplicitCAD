@@ -10,7 +10,7 @@
 
 module Graphics.Implicit.Export.DiscreteAproxable where
 
-import Prelude(Int, (-), (/), ($), (<), map, round, (+), maximum, abs, (*), fromIntegral, max, realToFrac)
+import Prelude (Int, (-), (/), ($), (<), map, round, (+), maximum, abs, (*), fromIntegral, max, realToFrac)
 
 import Graphics.Implicit.Definitions (ℝ, ℝ2, SymbolicObj3, SymbolicObj2, Polyline, TriangleMesh, NormedTriangleMesh)
 
@@ -60,7 +60,7 @@ instance DiscreteAproxable SymbolicObj3 DynamicImage where
                 ((fromIntegral a :: ℝ)/w - (0.5::ℝ)) ((fromIntegral b :: ℝ)/h - (0.5 ::ℝ))
             renderScreen :: ℝ -> ℝ -> Color
             renderScreen a b =
-                    average $ [
+                    average [
                         traceRay 
                             (cameraRay camera ((a,b) ^+^ ( 0.25/w, 0.25/h)))
                             2 box scene,

@@ -2,9 +2,6 @@
 -- Copyright (C) 2014 2015 2016, Julia Longtin (julial@turinglace.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
--- Allow us to use explicit foralls when writing function type declarations.
-{-# LANGUAGE ExplicitForAll #-}
-
 -- FIXME: Required. why?
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, TypeSynonymInstances, FlexibleInstances #-}
 
@@ -228,13 +225,13 @@ instance Object SymbolicObj3 ℝ3 where
     getImplicit = getImplicit3
     implicit a b= EmbedBoxedObj3 (a,b)
 
-union :: forall obj vec. Object obj vec => [obj] -> obj
+union :: Object obj vec => [obj] -> obj
 union = unionR 0
 
-difference :: forall obj vec. Object obj vec => [obj] -> obj
+difference :: Object obj vec => [obj] -> obj
 difference = differenceR 0
 
-intersect :: forall obj vec. Object obj vec => [obj] -> obj
+intersect :: Object obj vec => [obj] -> obj
 intersect = intersectR 0
 
 -- 3D operations
@@ -275,7 +272,7 @@ rotate3V = Rotate3V
 pack3 :: ℝ2 -> ℝ -> [SymbolicObj3] -> Maybe SymbolicObj3
 pack3 (dx, dy) sep objs =
     let
-        boxDropZ :: forall t t1 t2 t3 t4 t5. ((t2, t3, t), (t4, t5, t1)) -> ((t2, t3), (t4, t5))
+        boxDropZ :: ((t2, t3, t), (t4, t5, t1)) -> ((t2, t3), (t4, t5))
         boxDropZ ((a,b,_),(d,e,_)) = ((a,b),(d,e))
         withBoxes :: [(Box2, SymbolicObj3)]
         withBoxes = map (\obj -> ( boxDropZ $ getBox3 obj, obj)) objs
