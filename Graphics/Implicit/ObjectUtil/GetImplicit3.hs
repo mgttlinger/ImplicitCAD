@@ -3,9 +3,6 @@
 -- Copyright 2015 2016, Mike MacHenry (mike.machenry@gmail.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
--- Allow us to use explicit foralls when writing function type declarations.
-{-# LANGUAGE ExplicitForAll #-}
-
 module Graphics.Implicit.ObjectUtil.GetImplicit3 (getImplicit3) where
 
 import Prelude (Either(Left, Right), Int, abs, (-), (/), (*), sqrt, (+), atan2, max, cos, map, (==), minimum, ($), maximum, (**), sin, const, pi, (.), Bool(True, False), ceiling, floor, fromIntegral, return, error, head, tail, Num)
@@ -58,12 +55,12 @@ getImplicit3 (DifferenceR3 r symbObjs) =
     let
         objs = map getImplicit3 symbObjs
         obj = head objs
-        complement :: forall a t. Num a => (t -> a) -> t -> a
-        complement obj' = \p -> - obj' p
+        complement :: Num a => (t -> a) -> t -> a
+        complement obj' p = - obj' p
     in
         if r == 0
-        then \p -> maximum $ map ($p) $ obj:(map complement $ tail objs)
-        else \p -> rmaximum r $ map ($p) $ obj:(map complement $ tail objs)
+        then \p -> maximum $ map ($p) $ obj : map complement (tail objs)
+        else \p -> rmaximum r $ map ($p) $ obj : map complement (tail objs)
 -- Simple transforms
 getImplicit3 (Translate3 v symbObj) =
     let
@@ -80,27 +77,27 @@ getImplicit3 (Rotate3 (yz, zx, xy) symbObj) =
     let
         obj = getImplicit3 symbObj
         rotateYZ :: ℝ -> (ℝ3 -> ℝ) -> (ℝ3 -> ℝ)
-        rotateYZ θ obj' = \(x,y,z) -> obj' ( x, cos(θ)*y + sin(θ)*z, cos(θ)*z - sin(θ)*y)
+        rotateYZ θ obj' = \(x,y,z) -> obj' (x, cos θ * y + sin θ * z, cos θ * z - sin θ * y)
         rotateZX :: ℝ -> (ℝ3 -> ℝ) -> (ℝ3 -> ℝ)
-        rotateZX θ obj' = \(x,y,z) -> obj' ( cos(θ)*x - sin(θ)*z, y, cos(θ)*z + sin(θ)*x)
+        rotateZX θ obj' = \(x,y,z) -> obj' (cos θ * x - sin θ * z, y, cos θ * z + sin θ * x)
         rotateXY :: ℝ -> (ℝ3 -> ℝ) -> (ℝ3 -> ℝ)
-        rotateXY θ obj' = \(x,y,z) -> obj' ( cos(θ)*x + sin(θ)*y, cos(θ)*y - sin(θ)*x, z)
+        rotateXY θ obj' = \(x,y,z) -> obj' (cos θ * x + sin θ * y, cos θ * y - sin θ * x, z)
     in
-        rotateYZ yz $ rotateZX zx $ rotateXY xy $ obj
+        rotateYZ yz $ rotateZX zx $ rotateXY xy obj
 getImplicit3 (Rotate3V θ axis symbObj) =
     let
         axis' = normalized axis
         obj = getImplicit3 symbObj
         -- Note: this is ripped from data.cross.
-        cross3 :: forall t. Num t => (t, t, t) -> (t, t, t) -> (t, t, t)
+        cross3 :: Num t => (t, t, t) -> (t, t, t) -> (t, t, t)
         cross3 (ax,ay,az) (bx,by,bz) = ( ay * bz - az * by
                                        , az * bx - ax * bz
                                        , ax * by - ay * bx )
     in
         \v -> obj $
-            v ^* cos(θ)
-            ^-^ (axis' `cross3` v) ^* sin(θ)
-            ^+^ (axis' ^* (axis' <.> (v ^* (1 - cos(θ)))))
+            v ^* cos θ
+            ^-^ (axis' `cross3` v) ^* sin θ
+            ^+^ (axis' ^* (axis' <.> (v ^* (1 - cos θ))))
 -- Boundary mods
 getImplicit3 (Shell3 w symbObj) =
     let
@@ -132,7 +129,7 @@ getImplicit3 (ExtrudeRM r twist scale translate symbObj height) =
         scaleVec :: ℝ -> ℝ2 -> ℝ2
         scaleVec s (x,y) = (x/s, y/s)
         rotateVec :: ℝ -> ℝ2 -> ℝ2
-        rotateVec θ (x,y) = (x*cos(θ)+y*sin(θ), y*cos(θ)-x*sin(θ))
+        rotateVec θ (x,y) = (x * cos θ + y * sin θ , y * cos θ - x * sin θ)
         k = (pi :: ℝ)/(180:: ℝ)
     in
         \(x,y,z) -> let h = height' (x,y) in
@@ -157,12 +154,12 @@ getImplicit3 (RotateExtrude totalRotation round translate rotate symbObj) =
         round' = Maybe.fromMaybe 0 round
         translate' :: ℝ -> ℝ2
         translate' = Either.either
-                (\(a,b) -> \θ -> (a*θ/totalRotation', b*θ/totalRotation'))
+                (\(a,b) θ -> (a*θ/totalRotation', b*θ/totalRotation'))
                 (. (/k))
                 translate
         rotate' :: ℝ -> ℝ
         rotate' = Either.either
-                (\t -> \θ -> t*θ/totalRotation' )
+                (\t θ -> t*θ/totalRotation' )
                 (. (/k))
                 rotate
         twists = case rotate of
@@ -178,7 +175,7 @@ getImplicit3 (RotateExtrude totalRotation round translate rotate symbObj) =
                 ns =
                     if capped
                     then -- we will cap a different way, but want leeway to keep the function cont
-                        [-1 .. (ceiling (totalRotation' / tau)) + 1]
+                        [-1 .. ceiling (totalRotation' / tau) + 1]
                     else
                         [0 .. floor $ (totalRotation' - θ) /tau]
             n <- ns
@@ -201,4 +198,4 @@ getImplicit3 (RotateExtrude totalRotation round translate rotate symbObj) =
                 else obj rz_pos
 -- FIXME: implement this, or implement a fallthrough function.
 --getImplicit3 (ExtrudeRotateR) =
-getImplicit3 (ExtrudeRotateR _ _ _ _) = error "ExtrudeRotateR unimplimented!"
+getImplicit3 ExtrudeRotateR{} = error "ExtrudeRotateR unimplimented!"

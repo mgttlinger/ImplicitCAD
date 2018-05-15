@@ -13,7 +13,7 @@ import Control.Monad
 isExample (ExampleDoc _ ) = True
 isExample _ = False
 
-isArgument (ArgumentDoc _ _ _) = True
+isArgument ArgumentDoc{} = True
 isArgument _ = False
 
 main = do
@@ -27,7 +27,7 @@ main = do
 		putStrLn moduleName
 		putStrLn (map (const '-') moduleName)
 		putStrLn ""
-		when (not $ null examples) $ putStrLn "**Examples:**\n"
+	        unless (null examples) $ putStrLn "**Examples:**\n"
 		forM_ examples $ \(ExampleDoc example) -> putStrLn $ "   * `" ++ example ++ "`"
 		putStrLn ""
 		putStrLn "**Arguments:**\n"
@@ -61,18 +61,18 @@ data DocPart = ExampleDoc String
 -- | Extract Documentation from an ArgParser
 
 getArgParserDocs ::
-    (ArgParser a)    -- ^ ArgParser
+    ArgParser a      -- ^ ArgParser
     -> IO [DocPart]  -- ^ Docs (sadly IO wrapped)
 
 getArgParserDocs (ArgParser name fallback doc fnext) =
     do
         otherDocs <- Ex.catch (getArgParserDocs $ fnext undefined) (\(e :: Ex.SomeException) -> return [])
-        return $ (ArgumentDoc name (fmap show fallback) doc):otherDocs
+        return $ ArgumentDoc name (fmap show fallback) doc : otherDocs
 
 getArgParserDocs (ArgParserExample str child) =
     do
         childResults <- getArgParserDocs child
-        return $ (ExampleDoc str) : childResults
+        return $ ExampleDoc str : childResults
 
 -- We try to look at as little as possible, to avoid the risk of triggering an error.
 -- Yay laziness!

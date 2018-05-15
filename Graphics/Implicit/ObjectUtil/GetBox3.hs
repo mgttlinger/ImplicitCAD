@@ -5,7 +5,7 @@
 
 module Graphics.Implicit.ObjectUtil.GetBox3 (getBox3) where
 
-import Prelude(Eq, Bool(False), Fractional, Either (Left, Right), Maybe(Nothing, Just), (==), (||), max, (/), (-), (+), map, unzip, ($), filter, not, (.), unzip3, minimum, maximum, min, sqrt, (>), (&&), head, (*), (<), abs, either, error, const)
+import Prelude(Eq, Bool(False), Fractional, Either (Left, Right), Maybe(Nothing, Just), (==), (||), max, (/), (-), (+), map, unzip, ($), filter, not, (.), unzip3, minimum, maximum, otherwise, min, sqrt, (>), (&&), head, (*), (<), abs, either, error, const)
 
 import Graphics.Implicit.Definitions (ℝ, Box3, SymbolicObj3 (Rect3R, Sphere, Cylinder, Complement3, UnionR3, IntersectR3, DifferenceR3, Translate3, Scale3, Rotate3, Rotate3V, Shell3, Outset3, EmbedBoxedObj3, ExtrudeR, ExtrudeOnEdgeOf, ExtrudeRM, RotateExtrude, ExtrudeRotateR), (⋯*))
 import Graphics.Implicit.ObjectUtil.GetBox2 (getBox2, getDist2)
@@ -107,7 +107,7 @@ getBox3 (ExtrudeRM _ twist scale translate symbObj eitherh) =
         range = [0, 0.1 .. 1.0]
         ((x1,y1),(x2,y2)) = getBox2 symbObj
         (dx,dy) = (x2 - x1, y2 - y1)
-        (xrange, yrange) = (map (\s -> x1+s*dx) $ range, map (\s -> y1+s*dy) $ range )
+        (xrange, yrange) = (map (\s -> x1+s*dx) range, map (\s -> y1+s*dy) range)
 
         h = case eitherh of
               Left h' -> h'
@@ -115,7 +115,7 @@ getBox3 (ExtrudeRM _ twist scale translate symbObj eitherh) =
                 where
                     hs = [hf (x,y) | x <- xrange, y <- yrange]
                     (hmin, hmax) = (minimum hs, maximum hs)
-        hrange = map (h*) $ range
+        hrange = map (h*) range
         sval = case scale of
             Nothing -> 1
             Just scale' -> maximum $ map (abs . scale') hrange
@@ -147,7 +147,10 @@ getBox3 (RotateExtrude rot _ (Right f) rotate symbObj) =
         xmax = maximum xshifts
         ymax = maximum yshifts
         ymin = minimum yshifts
-        xmax' = if xmax > 0 then xmax * 1.1 else if xmax < - x1 then 0 else xmax
+        xmax'
+          | xmax > 0 = xmax * 1.1
+          | xmax < - x1 = 0
+          | otherwise = xmax
         ymax' = ymax + 0.1 * (ymax - ymin)
         ymin' = ymin - 0.1 * (ymax - ymin)
         (r, _, _) = if either (==0) (const False) rotate
@@ -158,4 +161,4 @@ getBox3 (RotateExtrude rot _ (Right f) rotate symbObj) =
     in
         ((-r, -r, y1 + ymin'),(r, r, y2 + ymax'))
 -- FIXME: add case for ExtrudeRotateR!
-getBox3(ExtrudeRotateR _ _ _ _ ) = error "ExtrudeRotateR implementation incomplete!"
+getBox3 ExtrudeRotateR{} = error "ExtrudeRotateR implementation incomplete!"

@@ -5,9 +5,6 @@
 -- Allow us to use explicit foralls when writing function type declarations.
 {-# LANGUAGE ExplicitForAll #-}
 
--- FIXME: required. why?
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, FlexibleContexts, TypeSynonymInstances, UndecidableInstances #-}
-
 module Graphics.Implicit.ObjectUtil.GetImplicit2 (getImplicit2) where
 
 import Prelude(Int, Num, abs, (-), (/), sqrt, (*), (+), (!!), mod, length, map, (<=), (&&), (>=), (||), odd, ($), (>), filter, (<), minimum, (==), maximum, max, cos, sin, head, tail)
@@ -28,8 +25,8 @@ getImplicit2 (Circle r ) =
 getImplicit2 (PolygonR _ points) =
     \p -> let
         pair :: Int -> (ℝ2,ℝ2)
-        pair n = (points !! n, points !! (mod (n + 1) (length points) ) )
-        pairs =  [ pair n | n <- [0 .. (length points) - 1] ]
+        pair n = (points !! n, points !! mod (n + 1) (length points))
+        pairs =  [ pair n | n <- [0 .. length points - 1]]
         relativePairs =  map (\(a,b) -> (a ^-^ p, b ^-^ p) ) pairs
         crossing_points =
             [x2 ^-^ y2*(x2-x1)/(y2-y1) | ((x1,y1), (x2,y2)) <-relativePairs,
@@ -58,11 +55,11 @@ getImplicit2 (DifferenceR2 r symbObjs) =
         objs = map getImplicit2 symbObjs
         obj = head objs
         complement :: forall a t. Num a => (t -> a) -> t -> a
-        complement obj' = \p -> - obj' p
+        complement obj' p = - obj' p
     in
         if r == 0
-        then \p -> maximum $ map ($p) $ obj:(map complement $ tail objs)
-        else \p -> rmaximum r $ map ($p) $ obj:(map complement $ tail objs)
+        then \p -> maximum $ map ($p) $ obj : map complement (tail objs)
+        else \p -> rmaximum r $ map ($p) $ obj : map complement (tail objs)
 getImplicit2 (IntersectR2 r symbObjs) =
     let
         objs = map getImplicit2 symbObjs
@@ -86,7 +83,7 @@ getImplicit2 (Rotate2 θ symbObj) =
     let
         obj = getImplicit2 symbObj
     in
-        \(x,y) -> obj ( cos(θ)*x + sin(θ)*y, cos(θ)*y - sin(θ)*x)
+        \(x,y) -> obj (cos θ * x + sin θ * y, cos θ * y - sin θ * x)
 -- Boundary mods
 getImplicit2 (Shell2 w symbObj) =
     let

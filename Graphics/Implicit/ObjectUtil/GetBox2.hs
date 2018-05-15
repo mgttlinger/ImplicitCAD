@@ -2,8 +2,6 @@
 -- Copyright 2016, Julia Longtin (julial@turinglace.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, FlexibleContexts, TypeSynonymInstances, UndecidableInstances #-}
-
 module Graphics.Implicit.ObjectUtil.GetBox2 (getBox2, getDist2) where
 
 import Prelude(Bool, Fractional, (==), (||), unzip, minimum, maximum, ($), filter, not, (.), (/), map, (-), (+), (*), cos, sin, sqrt, min, max, abs, head)
@@ -86,7 +84,7 @@ getBox2 (Scale2 s symbObj) =
 getBox2 (Rotate2 θ symbObj) =
     let
         ((x1,y1), (x2,y2)) = getBox2 symbObj
-        rotate (x,y) = (cos(θ)*x - sin(θ)*y, sin(θ)*x + cos(θ)*y)
+        rotate (x,y) = (cos θ * x - sin θ * y, sin θ * x + cos θ * y)
     in
         pointsBox [ rotate (x1, y1)
                   , rotate (x1, y2)
@@ -116,9 +114,9 @@ getDist2 (x,y) symbObj =
         ((x1,y1), (x2,y2)) = getBox2 symbObj
     in
         sqrt (
-              (max (abs (x1 - x)) (abs (x2 - x))) *
-              (max (abs (x1 - x)) (abs (x2 - x))) +
-              (max (abs (y1 - y)) (abs (y2 - y))) *
-              (max (abs (y1 - y)) (abs (y2 - y)))
+              max (abs (x1 - x)) (abs (x2 - x)) *
+              max (abs (x1 - x)) (abs (x2 - x)) +
+              max (abs (y1 - y)) (abs (y2 - y)) *
+              max (abs (y1 - y)) (abs (y2 - y))
              )
 
