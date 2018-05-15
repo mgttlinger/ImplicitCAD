@@ -15,6 +15,8 @@ import Graphics.Implicit.ExtOpenScad.Definitions (Pattern(Name), Statement(DoNot
 import Graphics.Implicit.ExtOpenScad.Parser.Util (Parser, angles, braces, comma, commaSep, curly, equals, genSpace, tryMany, stringGS, pad, (*<|>), (?:), patternMatcher, variableSymb)
 import Graphics.Implicit.ExtOpenScad.Parser.Expr (expr0)
 
+import Data.Functor (($>))
+
 
 
 parseProgram :: SourceName -> String -> Either ParseError [StatementI]
@@ -87,13 +89,13 @@ namedWithLN :: String -> Parser (Statement StatementI) -> Parser StatementI
 namedWithLN n e = n ?: withLineNumber e
 
 throwAway :: Parser StatementI
-throwAway = withLineNumber $ genSpace *> oneOf "%*" *> genSpace *> computation *> pure DoNothing
+throwAway = withLineNumber $ genSpace *> oneOf "%*" *> genSpace *> computation $> DoNothing
 
 -- An included ! Basically, inject another openscad file here...
 include :: Parser StatementI
 include = namedWithLN "include " (do
-  injectVals <- (string "include" *> pure True )
-                 <|> (string "use" *> pure False)
+  injectVals <- (string "include" $> True )
+                 <|> (string "use" $> False)
   filename <- angles $ many (noneOf "<> ")
   pure $ Include filename injectVals)
 
@@ -145,7 +147,7 @@ userModule :: Parser StatementI
 userModule = namedWithLN "user module " (do
   name <- variableSymb
   args <- pad moduleArgsUnit
-  s <- suite *<|> (stringGS " ; " *> pure [])
+  s <- suite *<|> (stringGS " ; " $> [])
   pure $ ModuleCall name args s)
 
 userModuleDeclaration :: Parser StatementI

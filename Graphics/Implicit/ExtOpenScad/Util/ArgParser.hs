@@ -56,7 +56,7 @@ test str = APTest str [] (return ())
 
 eulerCharacteristic :: ArgParser a -> Int -> ArgParser a
 eulerCharacteristic (APTest str tests child) χ =
-    APTest str ((EulerCharacteristic χ) : tests) child
+    APTest str (EulerCharacteristic χ : tests) child
 eulerCharacteristic _ _ = error "Impossible!"
 
 -- * Tools for handeling ArgParsers
@@ -97,11 +97,7 @@ argMap2 unnamedArgs namedArgs (AP name fallback _ f) =
                 Nothing -> (Nothing, ["No value and no default for argument " ++ name])
 
 argMap2 a b (APTerminator val) =
-    (Just val,
-        if not (null a && Map.null b)
-        then ["unused arguments"]
-        else []
-    )
+    (Just val, ["unused arguments" | not (null a && Map.null b)])
 
 argMap2 a b (APFailIf testval err child) =
     if testval

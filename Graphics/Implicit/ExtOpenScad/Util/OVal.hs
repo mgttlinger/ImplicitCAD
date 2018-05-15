@@ -27,13 +27,13 @@ class OTypeMirror a where
     toOObj :: a -> OVal
 
 instance OTypeMirror OVal where
-    fromOObj a = Just a
+    fromOObj = Just
     toOObj a = a
 
 instance OTypeMirror ℝ where
     fromOObj (ONum n) = Just n
     fromOObj _ = Nothing
-    toOObj n = ONum n
+    toOObj = ONum
 
 instance OTypeMirror ℕ where
     fromOObj (ONum n) = if n == fromInteger (floor n) then Just (floor n) else Nothing
@@ -43,7 +43,7 @@ instance OTypeMirror ℕ where
 instance OTypeMirror Bool where
     fromOObj (OBool b) = Just b
     fromOObj _ = Nothing
-    toOObj b = OBool b
+    toOObj = OBool
 
 #if __GLASGOW_HASKELL__ >= 710
 instance {-# Overlapping #-} OTypeMirror String where
@@ -52,7 +52,7 @@ instance OTypeMirror String where
 #endif
     fromOObj (OString str) = Just str
     fromOObj _ = Nothing
-    toOObj str = OString str
+    toOObj = OString
 
 instance forall a. (OTypeMirror a) => OTypeMirror (Maybe a) where
     fromOObj a = Just $ fromOObj a
@@ -64,18 +64,18 @@ instance {-# Overlappable #-} forall a. (OTypeMirror a) => OTypeMirror [a] where
 #else
 instance forall a. (OTypeMirror a) => OTypeMirror [a] where
 #endif
-    fromOObj (OList list) = Monad.mapM fromOObj $ list
+    fromOObj (OList list) = Monad.mapM fromOObj list
     fromOObj _ = Nothing
     toOObj list = OList $ map toOObj list
 
 instance forall a b. (OTypeMirror a, OTypeMirror b) => OTypeMirror (a,b) where
-    fromOObj (OList ((fromOObj -> Just a):(fromOObj -> Just b):[])) = Just (a,b)
+    fromOObj (OList [fromOObj -> Just a, fromOObj -> Just b]) = Just (a,b)
     fromOObj _ = Nothing
     toOObj (a,b) = OList [toOObj a, toOObj b]
 
 
 instance forall a b c. (OTypeMirror a, OTypeMirror b, OTypeMirror c) => OTypeMirror (a,b,c) where
-    fromOObj (OList ((fromOObj -> Just a):(fromOObj -> Just b):(fromOObj -> Just c):[])) =
+    fromOObj (OList [fromOObj -> Just a, fromOObj -> Just b, fromOObj -> Just c]) =
         Just (a,b,c)
     fromOObj _ = Nothing
     toOObj (a,b,c) = OList [toOObj a, toOObj b, toOObj c]
@@ -106,17 +106,17 @@ instance forall a b. (OTypeMirror a, OTypeMirror b) => OTypeMirror (Either a b) 
     toOObj (Right x) = toOObj x
     toOObj (Left  x) = toOObj x
 
-oTypeStr :: OVal -> [Char]
-oTypeStr (OUndefined) = "Undefined"
-oTypeStr (OBool   _ ) = "Bool"
-oTypeStr (ONum    _ ) = "Number"
-oTypeStr (OList   _ ) = "List"
-oTypeStr (OString _ ) = "String"
-oTypeStr (OFunc   _ ) = "Function"
-oTypeStr (OModule _ ) = "Module"
-oTypeStr (OError  _ ) = "Error"
-oTypeStr (OObj2   _ ) = "2D Object"
-oTypeStr (OObj3   _ ) = "3D Object"
+oTypeStr :: OVal -> String
+oTypeStr  OUndefined = "Undefined"
+oTypeStr (OBool   _) = "Bool"
+oTypeStr (ONum    _) = "Number"
+oTypeStr (OList   _) = "List"
+oTypeStr (OString _) = "String"
+oTypeStr (OFunc   _) = "Function"
+oTypeStr (OModule _) = "Module"
+oTypeStr (OError  _) = "Error"
+oTypeStr (OObj2   _) = "2D Object"
+oTypeStr (OObj3   _) = "3D Object"
 
 getErrors :: OVal -> Maybe String
 getErrors (OError er) = Just $ head er
@@ -131,7 +131,7 @@ infixr 2 <||>
     => (desiredType -> out)
     -> (OVal -> out)
     -> (OVal -> out)
-(<||>) f g = \input ->
+(<||>) f g input = 
     let
         coerceAttempt :: Maybe desiredType
         coerceAttempt = fromOObj input
@@ -141,9 +141,9 @@ infixr 2 <||>
 divideObjs :: [OVal] -> ([SymbolicObj2], [SymbolicObj3], [OVal])
 divideObjs children =
     runEval $ do
-    obj2s <- rseq ([ x | OObj2 x <- children ])
-    obj3s <- rseq ([ x | OObj3 x <- children ])
-    objs <- rpar (filter (not . isOObj) $ children )
+    obj2s <- rseq [ x | OObj2 x <- children ]
+    obj3s <- rseq [ x | OObj3 x <- children ]
+    objs <- rpar (filter (not . isOObj) children)
     return (obj2s, obj3s, objs)
         where
           isOObj  (OObj2 _) = True

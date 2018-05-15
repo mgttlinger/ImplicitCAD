@@ -37,7 +37,7 @@ primitives = [ sphere, cube, square, cylinder, circle, polygon, union, differenc
 -- sphere is a module without a suite.
 -- this means that the parser will look for this like
 --       sphere(args...);
-sphere :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+sphere :: (String, [OVal] -> ArgParser (IO [OVal]))
 sphere = moduleWithoutSuite "sphere" $ do
     example "sphere(3);"
     example "sphere(r=5);"
@@ -52,7 +52,7 @@ sphere = moduleWithoutSuite "sphere" $ do
     -- (Graphics.Implicit.Primitives)
     addObj3 $ Prim.sphere r
 
-cube :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+cube :: (String, [OVal] -> ArgParser (IO [OVal]))
 cube = moduleWithoutSuite "cube" $ do
 
     -- examples
@@ -98,7 +98,7 @@ cube = moduleWithoutSuite "cube" $ do
 
     addObj3 $ Prim.rect3R r (x1, y1, z1) (x2, y2, z2)
 
-square :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+square :: (String, [OVal] -> ArgParser (IO [OVal]))
 square = moduleWithoutSuite "square" $ do
 
     -- examples
@@ -142,7 +142,7 @@ square = moduleWithoutSuite "square" $ do
 
     addObj2 $ Prim.rectR r (x1, y1) (x2, y2)
 
-cylinder :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+cylinder :: (String, [OVal] -> ArgParser (IO [OVal]))
 cylinder = moduleWithoutSuite "cylinder" $ do
 
     example "cylinder(r=10, h=30, center=true);"
@@ -197,7 +197,7 @@ cylinder = moduleWithoutSuite "cylinder" $ do
         in shift obj3
         else shift $ Prim.cylinder2 r1 r2 dh
 
-circle :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+circle :: (String, [OVal] -> ArgParser (IO [OVal]))
 circle = moduleWithoutSuite "circle" $ do
     
     example "circle(r=10); // circle"
@@ -221,7 +221,7 @@ circle = moduleWithoutSuite "circle" $ do
                  sides = fromIntegral fn
             in [(r*cos θ, r*sin θ )| θ <- [2*pi*n/sides | n <- [0.0 .. sides - 1.0]]]
 
-polygon :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+polygon :: (String, [OVal] -> ArgParser (IO [OVal]))
 polygon = moduleWithoutSuite "polygon" $ do
     
     example "polygon ([(0,0), (0,10), (10,0)]);"
@@ -239,7 +239,7 @@ polygon = moduleWithoutSuite "polygon" $ do
         _ -> return $ return []
 
 
-union :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+union :: (String, [OVal] -> ArgParser (IO [OVal]))
 union = moduleWithSuite "union" $ \children -> do
     r :: ℝ <- argument "r"
         `defaultTo` 0.0
@@ -248,7 +248,7 @@ union = moduleWithSuite "union" $ \children -> do
         then objReduce (Prim.unionR r) (Prim.unionR r) children
         else objReduce  Prim.union      Prim.union     children
 
-intersect :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+intersect :: (String, [OVal] -> ArgParser (IO [OVal]))
 intersect = moduleWithSuite "intersection" $ \children -> do
     r :: ℝ <- argument "r"
         `defaultTo` 0.0
@@ -257,7 +257,7 @@ intersect = moduleWithSuite "intersection" $ \children -> do
         then objReduce (Prim.intersectR r) (Prim.intersectR r) children
         else objReduce  Prim.intersect      Prim.intersect     children
 
-difference :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+difference :: (String, [OVal] -> ArgParser (IO [OVal]))
 difference = moduleWithSuite "difference" $ \children -> do
     r :: ℝ <- argument "r"
         `defaultTo` 0.0
@@ -266,7 +266,7 @@ difference = moduleWithSuite "difference" $ \children -> do
         then objReduce (Prim.differenceR r) (Prim.differenceR r) children
         else objReduce  Prim.difference      Prim.difference     children
 
-translate :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+translate :: (String, [OVal] -> ArgParser (IO [OVal]))
 translate = moduleWithSuite "translate" $ \children -> do
 
     example "translate ([2,3]) circle (4);"
@@ -297,7 +297,7 @@ deg2rad :: ℝ -> ℝ
 deg2rad x = x / 180.0 * pi
 
 -- This is mostly insane
-rotate :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+rotate :: (String, [OVal] -> ArgParser (IO [OVal]))
 rotate = moduleWithSuite "rotate" $ \children -> do
     a <- argument "a"
         `doc` "value to rotate by; angle or list of angles"
@@ -317,7 +317,7 @@ rotate = moduleWithSuite "rotate" $ \children -> do
             objMap id (Prim.rotate3 (deg2rad yz, deg2rad zx, 0)) children
         ) <||> const []
 
-scale :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+scale :: (String, [OVal] -> ArgParser (IO [OVal]))
 scale = moduleWithSuite "scale" $ \children -> do
 
     example "scale(2) square(5);"
@@ -336,11 +336,11 @@ scale = moduleWithSuite "scale" $ \children -> do
         Right (Left (x,y))    -> scaleObjs (x,y) (x,y,1)
         Right (Right (x,y,z)) -> scaleObjs (x,y) (x,y,z)
 
-extrude :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+extrude :: (String, [OVal] -> ArgParser (IO [OVal]))
 extrude = moduleWithSuite "linear_extrude" $ \children -> do
     example "linear_extrude(10) square(5);"
 
-    height :: Either ℝ (ℝ -> ℝ -> ℝ) <- argument "height" `defaultTo` (Left 1)
+    height :: Either ℝ (ℝ -> ℝ -> ℝ) <- argument "height" `defaultTo` Left 1
         `doc` "height to extrude to..."
     center :: Bool <- argument "center" `defaultTo` False
         `doc` "center? (the z component)"
@@ -384,7 +384,7 @@ extrude = moduleWithSuite "linear_extrude" $ \children -> do
                 shiftAsNeeded $ Prim.extrudeRM r twist' scale' translate' obj height'
         ) children
 
-rotateExtrude :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+rotateExtrude :: (String, [OVal] -> ArgParser (IO [OVal]))
 rotateExtrude = moduleWithSuite "rotate_extrude" $ \children -> do
     example "rotate_extrude() translate(20) circle(10);"
 
@@ -398,8 +398,8 @@ rotateExtrude = moduleWithSuite "rotate_extrude" $ \children -> do
         is360m :: RealFrac a => a -> Bool
         is360m n = 360 * fromInteger (round $ n / 360) /= n
         cap = is360m totalRot
-            || (either ( /= (0,0)) (\f -> f 0 /= f totalRot) ) translateArg
-            || (either (is360m) (\f -> is360m (f 0 - f totalRot)) ) rotateArg
+            || either ( /= (0,0)) (\f -> f 0 /= f totalRot) translateArg
+            || either is360m (\f -> is360m (f 0 - f totalRot)) rotateArg
         capM = if cap then Just r else Nothing
 
     return $ return $ obj2UpMap (Prim.rotateExtrude totalRot capM translateArg rotateArg) children
@@ -414,7 +414,7 @@ rotateExtrude = moduleWithSuite "rotate_extrude" $ \children -> do
     getAndModUpObj2s suite (\obj -> extrudeRMod r (\θ (x,y) -> (x*cos(θ)+y*sin(θ), y*cos(θ)-x*sin(θ)) )  obj h)
 -}
 
-shell :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+shell :: (String, [OVal] -> ArgParser (IO [OVal]))
 shell = moduleWithSuite "shell" $ \children-> do
     w :: ℝ <- argument "w"
             `doc` "width of the shell..."
@@ -422,7 +422,7 @@ shell = moduleWithSuite "shell" $ \children-> do
     return $ return $ objMap (Prim.shell w) (Prim.shell w) children
 
 -- Not a perenant solution! Breaks if can't pack.
-pack :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+pack :: (String, [OVal] -> ArgParser (IO [OVal]))
 pack = moduleWithSuite "pack" $ \children -> do
 
     example "pack ([45,45], sep=2) { circle(10); circle(10); circle(10); circle(10); }"
@@ -448,7 +448,7 @@ pack = moduleWithSuite "pack" $ \children -> do
                     putStrLn "Can't pack given objects in given box with present algorithm"
                     return children
 
-unit :: ([Char], [OVal] -> ArgParser (IO [OVal]))
+unit :: (String, [OVal] -> ArgParser (IO [OVal]))
 unit = moduleWithSuite "unit" $ \children -> do
 
     example "unit(\"inch\") {..}"
@@ -458,7 +458,7 @@ unit = moduleWithSuite "unit" $ \children -> do
         `doc` "the unit you wish to work in"
 
     let
-        mmRatio :: Fractional a => [Char] -> Maybe a
+        mmRatio :: Fractional a => String -> Maybe a
         mmRatio "inch" = Just 25.4
         mmRatio "in"   = mmRatio "inch"
         mmRatio "foot" = Just 304.8

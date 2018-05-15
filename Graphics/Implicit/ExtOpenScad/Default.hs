@@ -4,6 +4,8 @@
 
 -- Allow us to use explicit foralls when writing function type declarations.
 {-# LANGUAGE ExplicitForAll #-}
+-- Lambdas that immediately case destruct.
+{-# LANGUAGE LambdaCase #-}
 
 -- We'd like to parse openscad code, with some improvements, for backwards compatability.
 
@@ -31,11 +33,11 @@ defaultObjects = fromList $
 -- Missing standard ones:
 -- rand, lookup,
 
-defaultConstants :: [([Char], OVal)]
+defaultConstants :: [(String, OVal)]
 defaultConstants = map (\(a,b) -> (a, toOObj (b::ℝ) ))
     [("pi", pi)]
 
-defaultFunctions :: [([Char], OVal)]
+defaultFunctions :: [(String, OVal)]
 defaultFunctions = map (\(a,b) -> (a, toOObj ( b :: ℝ -> ℝ)))
     [
         ("sin",   sin),
@@ -59,8 +61,8 @@ defaultFunctions = map (\(a,b) -> (a, toOObj ( b :: ℝ -> ℝ)))
         ("sqrt",  sqrt)
     ]
 
-defaultFunctions2 :: [([Char], OVal)]
-defaultFunctions2 = map (\(a,b) -> (a, toOObj (b :: ℝ -> ℝ -> ℝ) ))
+defaultFunctions2 :: [(String, OVal)]
+defaultFunctions2 = map (\(a,b) -> (a, toOObj (b :: ℝ -> ℝ -> ℝ)))
     [
         ("max", max),
         ("min", min),
@@ -68,11 +70,10 @@ defaultFunctions2 = map (\(a,b) -> (a, toOObj (b :: ℝ -> ℝ -> ℝ) ))
         ("pow", (**))
     ]
 
-defaultFunctionsSpecial :: [([Char], OVal)]
+defaultFunctionsSpecial :: [(String, OVal)]
 defaultFunctionsSpecial =
     [
-        ("map", toOObj $ flip $
-            (map :: (OVal -> OVal) -> [OVal] -> [OVal] )
+        ("map", toOObj $ flip (map :: (OVal -> OVal) -> [OVal] -> [OVal])
         )
         
     ]
@@ -86,7 +87,7 @@ defaultModules =
 
 -- more complicated ones:
 
-defaultPolymorphicFunctions :: [([Char], OVal)]
+defaultPolymorphicFunctions :: [(String, OVal)]
 defaultPolymorphicFunctions =
     [
         ("+", sumtotal),
@@ -118,22 +119,22 @@ defaultPolymorphicFunctions =
 
         -- Some key functions are written as OVals in optimizations attempts
 
-        prod = OFunc $ \x -> case x of
-            (OList (y:ys)) -> foldl mult y ys
-            (OList [])     -> ONum 1
-            _              -> OError ["Product takes a list"]
+        prod = OFunc $ \case 
+          (OList (y:ys)) -> foldl mult y ys
+          (OList [])     -> ONum 1
+          _              -> OError ["Product takes a list"]
 
         mult (ONum a)  (ONum b)  = ONum  (a*b)
         mult (ONum a)  (OList b) = OList (map (mult (ONum a)) b)
         mult (OList a) (ONum b)  = OList (map (mult (ONum b)) a)
         mult a         b         = errorAsAppropriate "multiply" a b
 
-        divide = OFunc $ \x -> case x of
-            (ONum a) -> OFunc $ \y -> case y of
-                (ONum b) -> ONum (a/b)
-                b        -> errorAsAppropriate "divide" (ONum a) b
-            a -> OFunc $ \y -> case y of
-                b -> div' a b
+        divide = OFunc $ \case 
+          (ONum a) -> OFunc $ \case
+                                  (ONum b) -> ONum (a/b)
+                                  b        -> errorAsAppropriate "divide" (ONum a) b
+          a -> OFunc $ \case 
+                           b -> div' a b
 
         div' (ONum a)  (ONum b) = ONum  (a/b)
         div' (OList a) (ONum b) = OList (map (\x -> div' x (ONum b)) a)
@@ -146,12 +147,12 @@ defaultPolymorphicFunctions =
         append (OString a) (OString b) = OString $ a++b
         append a           b           = errorAsAppropriate "append" a b
 
-        concatenate = OFunc $ \x -> case x of
+        concatenate = OFunc $ \case
             (OList (y:ys)) -> foldl append y ys
             (OList [])     -> OList []
             _              -> OError ["concat takes a list"]
 
-        sumtotal = OFunc $ \x -> case x of
+        sumtotal = OFunc $ \case
             (OList (y:ys)) -> foldl add y ys
             (OList [])     -> ONum 0
             _              -> OError ["Sum takes a list"]
@@ -207,11 +208,11 @@ defaultPolymorphicFunctions =
 
         splice :: [a] -> Int -> Int -> [a]
         splice [] _ _     = []
-        splice (l@(x:xs)) a b
-            |    a < 0  =    splice l   (a+n)  b
-            |    b < 0  =    splice l    a    (b+n)
-            |    a > 0  =    splice xs  (a-1) (b-1)
-            |    b > 0  = x:(splice xs   a    (b-1) )
+        splice l@(x:xs) a b
+            |    a < 0  =     splice l   (a+n)  b
+            |    b < 0  =     splice l    a    (b+n)
+            |    a > 0  =     splice xs  (a-1) (b-1)
+            |    b > 0  = x : splice xs   a    (b-1) 
             | otherwise = []
                     where n = length l
 

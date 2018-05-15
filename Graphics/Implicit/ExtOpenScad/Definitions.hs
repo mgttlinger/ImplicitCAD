@@ -19,7 +19,7 @@ import Prelude(Eq, Show, String, Maybe, Bool(True, False), Int, IO, (==), and, s
 import Graphics.Implicit.Definitions (ℝ, SymbolicObj2, SymbolicObj3)
 
 import Control.Applicative (Applicative, Alternative((<|>), empty), pure, (<*>))
-import Control.Monad (Functor, Monad, fmap, (>>=), mzero, mplus, MonadPlus, liftM, ap, return)
+import Control.Monad (Functor, Monad, fmap, (>>=), (>=>), mzero, mplus, MonadPlus, liftM, ap, return)
 import Data.Map (Map)
 
 -----------------------------------------------------------------
@@ -45,14 +45,14 @@ instance Functor ArgParser where
     fmap = liftM
 
 instance Applicative ArgParser where
-    pure a = APTerminator a
+    pure = APTerminator
     (<*>) = ap
 
 instance Monad ArgParser where
     -- We need to describe how (>>=) works.
     -- Let's get the hard ones out of the way first.
     -- ArgParser actually
-    (AP str fallback d f) >>= g = AP str fallback d (\a -> (f a) >>= g)
+    (AP str fallback d f) >>= g = AP str fallback d (f >=> g)
     (APFailIf b errmsg child) >>= g = APFailIf b errmsg (child >>= g)
     -- These next to is easy, they just pass the work along to their child
     (APExample str child) >>= g = APExample str (child >>= g)
@@ -60,13 +60,13 @@ instance Monad ArgParser where
     -- And an ArgParserTerminator happily gives away the value it contains
     (APTerminator a) >>= g = g a
     (APBranch bs) >>= g = APBranch $ map (>>= g) bs
-    return g = APTerminator g
+    return = APTerminator
 
 instance MonadPlus ArgParser where
     mzero = APFailIf True "" undefined
     mplus (APBranch as) (APBranch bs) = APBranch ( as  ++  bs )
     mplus (APBranch as) b             = APBranch ( as  ++ [b] )
-    mplus a             (APBranch bs) = APBranch ( [a] ++  bs )
+    mplus a             (APBranch bs) = APBranch ( a   :   bs )
     mplus a             b             = APBranch [ a   ,   b  ]
 
 instance Alternative ArgParser where
@@ -141,6 +141,6 @@ collector :: Symbol -> [Expr] -> Expr
 collector _ [x] = x
 collector s  l  = Var s :$ [ListE l]
 
-data TestInvariant = EulerCharacteristic Int
+newtype TestInvariant = EulerCharacteristic Int
     deriving (Show)
 

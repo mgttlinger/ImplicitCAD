@@ -13,17 +13,18 @@ import Text.ParserCombinators.Parsec (GenParser, anyChar, between, many, oneOf, 
 
 import Text.Parsec.Prim (ParsecT, Stream)
 import Data.Functor.Identity (Identity)
+import Data.Functor (($>))
 import Graphics.Implicit.ExtOpenScad.Definitions (Pattern(Wild, Name, ListP))
 
 
 type Parser t = forall st. GenParser Char st t
 
 -- white space, including tabs, newlines and comments
-genSpace :: Parser [Char]
+genSpace :: Parser String
 genSpace = many $
     oneOf " \t\n\r"
-    <|> (try $ string "//" *> many ( noneOf "\n") *> string "\n" *> pure ' ')
-    <|> (try $ string "/*" *> manyTill anyChar (try $ string "*/") *> pure ' ')
+    <|> try (string "//" *> many ( noneOf "\n") *> string "\n" $> ' ')
+    <|> try (string "/*" *> manyTill anyChar (try $ string "*/") $> ' ')
 
 pad :: Parser b -> Parser b
 pad = between genSpace genSpace
@@ -36,12 +37,12 @@ a *<|> b = try a <|> b
 (?:) :: String -> ParsecT s u m a -> ParsecT s u m a
 l ?: p = p <?> l
 
-stringGS :: [Char] -> Parser String
-stringGS (' ':xs) = do
+stringGS :: String -> Parser String
+stringGS (' ' : xs) = do
     x'  <- genSpace
     xs' <- stringGS xs
     pure (x' ++ xs')
-stringGS (x:xs) = do
+stringGS (x : xs) = do
     x'  <- char x
     xs' <- stringGS xs
     pure (x' : xs')
@@ -77,12 +78,12 @@ braces = genBetween " ( " " ) "
 tryMany :: [GenParser tok u a] -> ParsecT [tok] u Identity a
 tryMany = (foldl1 (<|>)) . (try <$>)
 
-variableSymb :: Stream s m Char => ParsecT s u m [Char]
+variableSymb :: Stream s m Char => ParsecT s u m String
 variableSymb = many1 (noneOf " ,|[]{}()+-*&^%#@!~`'\"\\/;:.,<>?=") <?> "variable"
 
 patternMatcher :: Parser Pattern
 patternMatcher =
-    (char '_' *> pure Wild)
+    (char '_' $> Wild)
     <|> {-( do
         a <- literal
         return $ \obj ->
@@ -90,4 +91,4 @@ patternMatcher =
             then Just (Map.empty)
             else Nothing
     ) <|> -} (Name <$> variableSymb)
-    <|> (ListP <$> (squares $ pad $ patternMatcher `sepBy` (try $ genSpace *> char ',' *> genSpace)))
+    <|> (ListP <$> squares (pad $ patternMatcher `sepBy` try (genSpace *> char ',' *> genSpace)))

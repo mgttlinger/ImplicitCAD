@@ -11,12 +11,12 @@
 
 module Graphics.Implicit.ExtOpenScad.Util.StateC (getVarLookup, modifyVarLookup, lookupVar, pushVals, getVals, putVals, withPathShiftedBy, getPath, getRelPath, errorC, mapMaybeM, StateC) where
 
-import Prelude(FilePath, IO, String, Maybe(Just, Nothing), Show, Char, Monad, fmap, (.), ($), (++), return, putStrLn, show)
+import Prelude(FilePath, IO, String, Maybe(Just, Nothing), Show, Char, Monad, fmap, (.), ($), (<$>), (++), return, putStrLn, show)
 
 import Graphics.Implicit.ExtOpenScad.Definitions(VarLookup, OVal)
 
 import qualified Data.Map as Map
-import Control.Monad.State (StateT, get, put, modify, liftIO)
+import Control.Monad.State (StateT, get, gets, put, modify, liftIO)
 import System.FilePath((</>))
 import Control.Monad.IO.Class (MonadIO)
 
@@ -24,15 +24,13 @@ type CompState = (VarLookup, [OVal], FilePath, (), ())
 type StateC = StateT CompState IO
 
 getVarLookup :: StateC VarLookup
-getVarLookup = fmap (\(a,_,_,_,_) -> a) get
+getVarLookup = gets (\(a,_,_,_,_) -> a)
 
 modifyVarLookup :: (VarLookup -> VarLookup) -> StateC ()
 modifyVarLookup = modify . (\f (a,b,c,d,e) -> (f a, b, c, d, e))
 
 lookupVar :: String -> StateC (Maybe OVal)
-lookupVar name = do
-    varlookup <- getVarLookup
-    return $ Map.lookup name varlookup
+lookupVar name = do Map.lookup name <$> getVarLookup
 
 pushVals :: [OVal] -> StateC ()
 pushVals vals = modify (\(a,b,c,d,e) -> (a, vals ++ b,c,d,e))
@@ -66,11 +64,9 @@ getRelPath relPath = do
     path <- getPath
     return $ path </> relPath
 
-errorC :: forall (m :: * -> *) a. (Show a, MonadIO m) => a -> [Char] -> m ()
+errorC :: forall (m :: * -> *) a. (Show a, MonadIO m) => a -> String -> m ()
 errorC lineN err = liftIO $ putStrLn $ "At " ++ show lineN ++ ": " ++ err
 
 mapMaybeM :: forall t (m :: * -> *) a. Monad m => (t -> m a) -> Maybe t -> m (Maybe a)
-mapMaybeM f (Just a) = do
-    b <- f a
-    return (Just b)
+mapMaybeM f (Just a) = do Just <$> f a
 mapMaybeM _ Nothing = return Nothing

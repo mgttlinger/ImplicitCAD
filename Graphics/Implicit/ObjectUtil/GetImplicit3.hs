@@ -130,7 +130,7 @@ getImplicit3 (ExtrudeRM r twist scale translate symbObj height) =
             Left n -> n
             Right f -> f (x,y)
         scaleVec :: ℝ -> ℝ2 -> ℝ2
-        scaleVec  s = \(x,y) -> (x/s, y/s)
+        scaleVec s (x,y) = (x/s, y/s)
         rotateVec :: ℝ -> ℝ2 -> ℝ2
         rotateVec θ (x,y) = (x*cos(θ)+y*sin(θ), y*cos(θ)-x*sin(θ))
         k = (pi :: ℝ)/(180:: ℝ)
