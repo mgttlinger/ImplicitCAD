@@ -2,16 +2,13 @@
 -- Copyright 2016, Julia Longtin (julial@turinglace.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
--- Allow us to use explicit foralls when writing function type declarations.
-{-# LANGUAGE ExplicitForAll #-}
-
 -- FIXME: required. why?
 {-# LANGUAGE KindSignatures, FlexibleContexts #-}
 {-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
 
 module Graphics.Implicit.ExtOpenScad.Util.StateC (getVarLookup, modifyVarLookup, lookupVar, pushVals, getVals, putVals, withPathShiftedBy, getPath, getRelPath, errorC, mapMaybeM, StateC) where
 
-import Prelude(FilePath, IO, String, Maybe(Just, Nothing), Show, Char, Monad, fmap, (.), ($), (<$>), (++), return, putStrLn, show)
+import Prelude(FilePath, IO, String, Maybe(Just, Nothing), Show, Monad, (.), ($), (<$>), (++), return, putStrLn, show)
 
 import Graphics.Implicit.ExtOpenScad.Definitions(VarLookup, OVal)
 
@@ -64,9 +61,9 @@ getRelPath relPath = do
     path <- getPath
     return $ path </> relPath
 
-errorC :: forall (m :: * -> *) a. (Show a, MonadIO m) => a -> String -> m ()
+errorC :: (Show a, MonadIO m) => a -> String -> m ()
 errorC lineN err = liftIO $ putStrLn $ "At " ++ show lineN ++ ": " ++ err
 
-mapMaybeM :: forall t (m :: * -> *) a. Monad m => (t -> m a) -> Maybe t -> m (Maybe a)
+mapMaybeM :: Monad m => (t -> m a) -> Maybe t -> m (Maybe a)
 mapMaybeM f (Just a) = do Just <$> f a
 mapMaybeM _ Nothing = return Nothing

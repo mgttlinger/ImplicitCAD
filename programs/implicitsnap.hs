@@ -2,9 +2,6 @@
 -- Copyright (C) 2014 2015, Julia Longtin (julial@turinglace.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
--- Allow us to use explicit foralls when writing function type declarations.
-{-# LANGUAGE ExplicitForAll #-}
-
 {-# LANGUAGE OverloadedStrings #-}
 
 -- A Snap(HTTP) server providing an ImplicitCAD REST API.
@@ -71,7 +68,7 @@ renderHandler = method GET $ withCompression $ do
                 (Just $ BS.Char.unpack format)
         (_, _, _)       -> writeBS "must provide source and callback as 1 GET variable each"
 
-getRes :: forall k. (Data.String.IsString k, Ord k) => (Map k OVal, [SymbolicObj2], [SymbolicObj3]) -> ℝ
+getRes :: (Data.String.IsString k, Ord k) => (Map k OVal, [SymbolicObj2], [SymbolicObj3]) -> ℝ
 getRes (varlookup, obj2s, obj3s) =
     let
         qual = case Map.lookup "$quality" varlookup of
@@ -100,7 +97,7 @@ getRes (varlookup, obj2s, obj3s) =
             else -1
 
 
-getWidth :: forall t. (t, [SymbolicObj2], [SymbolicObj3]) -> ℝ
+getWidth :: (t, [SymbolicObj2], [SymbolicObj3]) -> ℝ
 getWidth (_,     _, obj:_) = maximum [x2-x1, y2-y1, z2-z1]
     where ((x1,y1,z1),(x2,y2,z2)) = getBox3 obj
 getWidth (_, obj:_,     _) = max (x2-x1) (y2-y1)
@@ -162,6 +159,4 @@ executeAndExport content callback maybeFormat =
                     callbackS (TL.unpack (svg (discreteAprox res obj))) msgs
                 (Right (Just obj, _), Just "gcode/hacklab-laser") ->
                     callbackS (TL.unpack (hacklabLaserGCode (discreteAprox res obj))) msgs
-
-
-
+                _ -> error "unhandeled case" -- FIXME

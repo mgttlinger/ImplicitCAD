@@ -12,7 +12,7 @@
 -- Export one set containing all of the primitive object's patern matches.
 module Graphics.Implicit.ExtOpenScad.Primitives (primitives) where
 
-import Prelude(String, IO, Char, Either(Left, Right), Bool(False), Maybe(Just, Nothing), Fractional, ($), return, either, id, (-), (==), (&&), (<), fromIntegral, (*), cos, sin, pi, (/), (>), const, uncurry, realToFrac, fmap, fromInteger, round, (/=), (||), not, null, map, (++), putStrLn)
+import Prelude(String, IO, Either(Left, Right), Bool(False), Maybe(Just, Nothing), Fractional, ($), return, either, id, (-), (==), (&&), (<), fromIntegral, (*), cos, sin, pi, (/), (>), const, uncurry, realToFrac, fmap, fromInteger, round, (/=), (||), not, null, map, (++), putStrLn)
 
 import Graphics.Implicit.Definitions (ℝ, ℝ2, ℝ3, ℕ, SymbolicObj2, SymbolicObj3)
 
@@ -199,7 +199,7 @@ cylinder = moduleWithoutSuite "cylinder" $ do
 
 circle :: (String, [OVal] -> ArgParser (IO [OVal]))
 circle = moduleWithoutSuite "circle" $ do
-    
+
     example "circle(r=10); // circle"
     example "circle(r=5, $fn=6); //hexagon"
 
@@ -223,9 +223,9 @@ circle = moduleWithoutSuite "circle" $ do
 
 polygon :: (String, [OVal] -> ArgParser (IO [OVal]))
 polygon = moduleWithoutSuite "polygon" $ do
-    
+
     example "polygon ([(0,0), (0,10), (10,0)]);"
-    
+
     points :: [ℝ2] <-  argument "points"
                         `doc` "vertices of the polygon"
     paths :: [ℕ ]  <- argument "paths"
@@ -289,7 +289,7 @@ translate = moduleWithSuite "translate" $ \children -> do
                 Left          x       -> (x,0,0)
                 Right (Left  (x,y)  ) -> (x,y,0)
                 Right (Right (x,y,z)) -> (x,y,z)
-    
+
     return $ return $
         objMap (Prim.translate (x,y)) (Prim.translate (x,y,z)) children
 
@@ -326,11 +326,11 @@ scale = moduleWithSuite "scale" $ \children -> do
 
     v :: Either ℝ (Either ℝ2 ℝ3) <- argument "v"
         `doc` "vector or scalar to scale by"
-    
+
     let
         scaleObjs stretch2 stretch3 =
             objMap (Prim.scale stretch2) (Prim.scale stretch3) children
-    
+
     return $ return $ case v of
         Left   x              -> scaleObjs (x,1) (x,1,1)
         Right (Left (x,y))    -> scaleObjs (x,y) (x,y,1)
@@ -352,7 +352,7 @@ extrude = moduleWithSuite "linear_extrude" $ \children -> do
         `doc` "translate according to this funciton as we extrude..."
     r      :: ℝ   <- argument "r"      `defaultTo` 0
         `doc` "round the top?"
-    
+
     let
         heightn = case height of
                 Left  h -> h
@@ -371,11 +371,11 @@ extrude = moduleWithSuite "linear_extrude" $ \children -> do
         funcify :: (VectorSpace a, Fractional (Scalar a)) => Either a (ℝ -> a) -> ℝ -> a
         funcify (Left val) h = realToFrac (h/heightn) *^ val
         funcify (Right f ) h = f h
-        
+
         twist' = fmap funcify twist
         scale' = fmap funcify scaleArg
         translate' = fmap funcify translateArg
-    
+
     return $ return $ obj2UpMap (
         \obj -> case height of
             Left constHeight | isNothing twist && isNothing scaleArg && isNothing translateArg ->

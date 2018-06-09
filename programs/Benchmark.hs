@@ -10,7 +10,7 @@
 import Criterion.Main
 
 -- The parts of ImplicitCAD we know how to benchmark (in theory).
-import Graphics.Implicit (union, circle, writeSVG, writePNG2, writePNG3, writeSTL, SymbolicObj2, SymbolicObj3)
+import Graphics.Implicit (union, circle, SymbolicObj2, SymbolicObj3)
 import Graphics.Implicit.Export.SymbolicObj2 (symbolicGetContour)
 import Graphics.Implicit.Export.SymbolicObj3 (symbolicGetMesh)
 import Graphics.Implicit.Primitives (translate, difference, extrudeRM, rect3R)
@@ -71,11 +71,13 @@ obj3Benchmarks name obj =
       bench "Get mesh" $ nf (symbolicGetMesh 1) obj
     ]
 
+benchmarks :: [Benchmark]
 benchmarks =
     [ obj3Benchmarks "Object 1" object1
     , obj3Benchmarks "Object 2" object2
     , obj3Benchmarks "Object 3" object3
+    , obj2Benchmarks "Object 4" obj2d_1
     ]
 
+main :: IO ()
 main = defaultMain benchmarks
-

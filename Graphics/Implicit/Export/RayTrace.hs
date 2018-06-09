@@ -4,7 +4,7 @@
 
 module Graphics.Implicit.Export.RayTrace where
 
-import Prelude (Show, RealFrac, Maybe(Just, Nothing), Int, Bool(False, True), (-), (.), ($), (*), (/), min, fromInteger, max, round, fromIntegral, unzip, map, length, sum, maximum, minimum, (>), (+), (<), (==), pred, flip, (++), not, abs, floor, fromIntegral, toRational, otherwise)
+import Prelude (Show, RealFrac, Maybe(Just, Nothing), Int, Bool(False, True), (-), (.), ($), (*), (/), min, fromInteger, max, round, fromIntegral, unzip, map, length, sum, maximum, minimum, (>), (+), (<), (==), pred, flip, not, abs, floor, fromIntegral, toRational, otherwise)
 
 import Graphics.Implicit.Definitions (ℝ, ℝ2, ℝ3, (⋅), Obj3)
 import Codec.Picture (Pixel8, Image, DynamicImage(ImageRGBA8), PixelRGBA8(PixelRGBA8))
@@ -47,8 +47,8 @@ s `colorMult` (PixelRGBA8 a b c d) = color (s `mult` a) (s `mult` b) (s `mult` c
         mult x y = round . bound . toRational $ x * y
 
 average :: [Color] -> Color
-average l = 
-    let    
+average l =
+    let
         ((rs, gs), (bs, as)) = (\(a'',b'') -> (unzip a'', unzip b'')) $ unzip $ map
             (\(PixelRGBA8 r g b a) -> ((fromIntegral r, fromIntegral g), (fromIntegral b, fromIntegral a)))
             l :: (([ℝ], [ℝ]), ([ℝ],[ℝ]))
@@ -90,14 +90,14 @@ rayBounds ray box =
 intersection :: Ray -> ((ℝ,ℝ), ℝ) -> ℝ -> Obj3 -> Maybe ℝ3
 intersection r@(Ray p v) ((a, aval),b) res obj =
     let
-        step 
+        step
           | aval/(4::ℝ) > res = res
           | aval/(2::ℝ) > res = res/(2 :: ℝ)
           | otherwise         = res/(10 :: ℝ)
         a'  = a + step
         a'val = obj (p ^+^ a'*^v)
     in if a'val < 0
-    then 
+    then
         let a'' = refine (a,a') (\s -> obj (p ^+^ s*^v))
         in Just (p ^+^ a''*^v)
     else if a' < b
@@ -105,7 +105,7 @@ intersection r@(Ray p v) ((a, aval),b) res obj =
     else Nothing
 
 refine :: ℝ2 -> (ℝ -> ℝ) -> ℝ
-refine (a, b) obj = 
+refine (a, b) obj =
     let
         (aval, bval) = (obj a, obj b)
     in if bval < aval
@@ -114,7 +114,7 @@ refine (a, b) obj =
 
 refine' :: Int -> ℝ2 -> ℝ2 -> (ℝ -> ℝ) -> ℝ
 refine' 0 (a, _) _ _ = a
-refine' n (a, b) (aval, bval) obj = 
+refine' n (a, b) (aval, bval) obj =
     let
         mid = (a+b)/(2::ℝ)
         midval = obj mid
@@ -154,14 +154,12 @@ traceRay ray@(Ray cameraP cameraV) step box (Scene obj objColor lights defaultCo
                 proj a' b' = (a'⋅b')*^b'
                 dist  = vectorDistance p lightPos
                 illumination = max 0 (normal ⋅ unitV) * lightIntensity * (25 /dist)
-                rV = 
+                rV =
                     let
                         normalComponent = proj v' normal
                         parComponent    = v' - normalComponent
                     in
-                        normalComponent - parComponent    
+                        normalComponent - parComponent
             return $ illumination * (3 + 0.3 * abs (rV ⋅ cameraV) * abs (rV ⋅ cameraV))
             )
         Nothing   -> defaultColor
-
-

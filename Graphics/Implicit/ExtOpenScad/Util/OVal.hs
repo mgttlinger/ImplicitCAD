@@ -12,7 +12,7 @@
 
 module Graphics.Implicit.ExtOpenScad.Util.OVal where
 
-import Prelude(Maybe(Just, Nothing), Bool(True, False), Either(Left,Right), String, Char, (==), fromInteger, floor, ($), (.), map, error, (++), show, fromIntegral, head, flip, filter, maybe, not, return)
+import Prelude(Maybe(Just, Nothing), Bool(True, False), Either(Left,Right), String, (==), fromInteger, floor, ($), (.), map, error, (++), show, fromIntegral, head, flip, filter, maybe, not, return)
 
 import Graphics.Implicit.Definitions(ℝ, ℕ, SymbolicObj2, SymbolicObj3)
 import Graphics.Implicit.ExtOpenScad.Definitions (OVal(ONum, OBool, OString, OList, OFunc, OUndefined, OModule, OError, OObj2, OObj3))
@@ -131,7 +131,7 @@ infixr 2 <||>
     => (desiredType -> out)
     -> (OVal -> out)
     -> (OVal -> out)
-(<||>) f g input = 
+(<||>) f g input =
     let
         coerceAttempt :: Maybe desiredType
         coerceAttempt = fromOObj input

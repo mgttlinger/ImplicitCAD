@@ -2,8 +2,6 @@
 -- Copyright (C) 2016, Julia Longtin (julial@turinglace.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
--- Allow us to use explicit foralls when writing function type declarations.
-{-# LANGUAGE ExplicitForAll #-}
 -- Lambdas that immediately case destruct.
 {-# LANGUAGE LambdaCase #-}
 
@@ -12,7 +10,7 @@
 module Graphics.Implicit.ExtOpenScad.Default where
 
 
-import Prelude (Char, String, Bool(True, False), Maybe(Just, Nothing), Int, ($), (++), map, pi, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs, signum, fromInteger, (.), floor, ceiling, round, exp, log, sqrt, max, min, atan2, (**), flip, (<), (>), (<=), (>=), (==), (/=), (&&), (||), not, show, foldl, (*), (/), mod, (+), zipWith, (-), (!!), length, otherwise, fromIntegral)
+import Prelude (String, Bool(True, False), Maybe(Just, Nothing), Int, ($), (++), map, pi, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs, signum, fromInteger, (.), floor, ceiling, round, exp, log, sqrt, max, min, atan2, (**), flip, (<), (>), (<=), (>=), (==), (/=), (&&), (||), not, show, foldl, (*), (/), mod, (+), zipWith, (-), (!!), length, otherwise, fromIntegral)
 
 import Graphics.Implicit.Definitions (ℝ)
 import Graphics.Implicit.ExtOpenScad.Definitions(VarLookup, OVal(OList, ONum, OString, OUndefined, OError, OModule, OFunc))
@@ -75,7 +73,7 @@ defaultFunctionsSpecial =
     [
         ("map", toOObj $ flip (map :: (OVal -> OVal) -> [OVal] -> [OVal])
         )
-        
+
     ]
 
 
@@ -119,7 +117,7 @@ defaultPolymorphicFunctions =
 
         -- Some key functions are written as OVals in optimizations attempts
 
-        prod = OFunc $ \case 
+        prod = OFunc $ \case
           (OList (y:ys)) -> foldl mult y ys
           (OList [])     -> ONum 1
           _              -> OError ["Product takes a list"]
@@ -129,11 +127,11 @@ defaultPolymorphicFunctions =
         mult (OList a) (ONum b)  = OList (map (mult (ONum b)) a)
         mult a         b         = errorAsAppropriate "multiply" a b
 
-        divide = OFunc $ \case 
+        divide = OFunc $ \case
           (ONum a) -> OFunc $ \case
                                   (ONum b) -> ONum (a/b)
                                   b        -> errorAsAppropriate "divide" (ONum a) b
-          a -> OFunc $ \case 
+          a -> OFunc $ \case
                            b -> div' a b
 
         div' (ONum a)  (ONum b) = ONum  (a/b)
@@ -212,7 +210,7 @@ defaultPolymorphicFunctions =
             |    a < 0  =     splice l   (a+n)  b
             |    b < 0  =     splice l    a    (b+n)
             |    a > 0  =     splice xs  (a-1) (b-1)
-            |    b > 0  = x : splice xs   a    (b-1) 
+            |    b > 0  = x : splice xs   a    (b-1)
             | otherwise = []
                     where n = length l
 
@@ -235,11 +233,10 @@ defaultPolymorphicFunctions =
                 [fromInteger (ceiling a), fromInteger (ceiling (a+b)).. fromInteger (floor c)]
         list_gen _ = Nothing
 
-        ternary :: forall t. Bool -> t -> t -> t
+        ternary :: Bool -> t -> t -> t
         ternary True a _ = a
         ternary False _ b = b
 
         olength (OString s) = ONum $ fromIntegral $ length s
         olength (OList s)   = ONum $ fromIntegral $ length s
         olength a           = OError ["Can't take length of a " ++ oTypeStr a ++ "."]
-

@@ -2,8 +2,10 @@
 -- Copyright (C) 2014 2015 2016, Julia Longtin (julial@turinglace.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
--- FIXME: Required. why?
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 -- A module exporting all of the primitives, and some operations on them.
 module Graphics.Implicit.Primitives (
@@ -135,12 +137,12 @@ polygonR = PolygonR
 -- $ Shared Operations
 
 class Object obj vec | obj -> vec where
-    
+
     -- | Complement an Object
     complement ::
         obj     -- ^ Object to complement
         -> obj  -- ^ Result
-    
+
     -- | Rounded union
     unionR ::
         ℝ        -- ^ The radius of rounding
@@ -158,7 +160,7 @@ class Object obj vec | obj -> vec where
         ℝ        -- ^ The radius of rounding
         -> [obj] -- ^ Objects to intersect
         -> obj   -- ^ Resulting object
-    
+
     -- | Translate an object by a vector of appropriate dimension.
     translate ::
         vec      -- ^ Vector to translate by (Also: a is a vector, blah, blah)
@@ -197,7 +199,7 @@ class Object obj vec | obj -> vec where
         (vec -> ℝ)     -- ^ Implicit function
         -> (vec, vec)  -- ^ Bounding box
         -> obj         -- ^ Resulting object
-    
+
 
 instance Object SymbolicObj2 ℝ2 where
     translate   = Translate2
@@ -293,4 +295,3 @@ pack2 (dx, dy) sep objs =
     in case pack ((0,0),(dx,dy)) sep withBoxes of
             (a, []) -> Just $ union $ map (\((x,y),obj) -> translate (x,y) obj) a
             _ -> Nothing
-
