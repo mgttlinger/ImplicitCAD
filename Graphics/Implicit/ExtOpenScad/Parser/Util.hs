@@ -3,18 +3,27 @@
 -- Copyright 2017 Merlin Göttlinger (megoettlinger@gmail.com)
 -- Released under the GNU AGPLV3+, see LICENSE
 
-{-# LANGUAGE FlexibleContexts, Rank2Types #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE Rank2Types       #-}
 
 module Graphics.Implicit.ExtOpenScad.Parser.Util (Parser, angles, braces, comma, commaSep, curly, equals, genBetween, genSpace, pad, squares, (*<|>), (?:), stringGS, padString, tryMany, variableSymb, patternMatcher) where
 
-import Prelude (String, Char, ($), (++), foldl1, pure, (*>), (<$>), (.))
+import           Prelude                                   (Char, String,
+                                                            foldl1, pure, ($),
+                                                            (*>), (++), (.),
+                                                            (<$>))
 
-import Text.ParserCombinators.Parsec (GenParser, anyChar, between, many, oneOf, noneOf, (<|>), try, string, manyTill, (<?>), char, many1, sepBy)
+import           Text.ParserCombinators.Parsec             (GenParser, anyChar,
+                                                            between, char, many,
+                                                            many1, manyTill,
+                                                            noneOf, oneOf,
+                                                            sepBy, string, try,
+                                                            (<?>), (<|>))
 
-import Text.Parsec.Prim (ParsecT, Stream)
-import Data.Functor.Identity (Identity)
-import Data.Functor (($>))
-import Graphics.Implicit.ExtOpenScad.Definitions (Pattern(Wild, Name, ListP))
+import           Data.Functor                              (($>))
+import           Data.Functor.Identity                     (Identity)
+import           Graphics.Implicit.ExtOpenScad.Definitions (Pattern (ListP, Name, Wild))
+import           Text.Parsec.Prim                          (ParsecT, Stream)
 
 
 type Parser t = forall st. GenParser Char st t
@@ -52,7 +61,7 @@ comma :: Parser String
 comma = stringGS " , "
 
 commaSep :: Parser t -> Parser [t]
-commaSep p = sepBy p comma 
+commaSep p = sepBy p comma
 
 equals :: Parser String
 equals = stringGS " = "
@@ -76,7 +85,7 @@ braces :: Parser t -> Parser t
 braces = genBetween " ( " " ) "
 
 tryMany :: [GenParser tok u a] -> ParsecT [tok] u Identity a
-tryMany = (foldl1 (<|>)) . (try <$>)
+tryMany = foldl1 (<|>) . (try <$>)
 
 variableSymb :: Stream s m Char => ParsecT s u m String
 variableSymb = many1 (noneOf " ,|[]{}()+-*&^%#@!~`'\"\\/;:.,<>?=") <?> "variable"

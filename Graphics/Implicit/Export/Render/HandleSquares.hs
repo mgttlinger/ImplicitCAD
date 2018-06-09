@@ -4,11 +4,11 @@
 
 module Graphics.Implicit.Export.Render.HandleSquares (mergedSquareTris) where
 
-import Prelude(concatMap, (++))
+import           Prelude                                     (concatMap, (++))
 
-import Graphics.Implicit.Definitions (Triangle)
-import Graphics.Implicit.Export.Render.Definitions (TriSquare(Tris, Sq))
-import Data.VectorSpace ((^*), (*^), (^+^))
+import           Data.VectorSpace                            ((*^), (^*), (^+^))
+import           Graphics.Implicit.Definitions               (Triangle)
+import           Graphics.Implicit.Export.Render.Definitions (TriSquare (Sq, Tris))
 
 -- Disable square merging temporarily.
 --import GHC.Exts (groupWith)
@@ -66,7 +66,7 @@ mergedSquareTris sqTris =
         triTriangles = [tri | Tris tris <- sqTris, tri <- tris ]
         --concat $ map (\(Tris a) -> a) $ filter isTris sqTris
         -- We actually want to work on the quads, so we find those
-        squaresFromTris = [ (Sq x y z q) | Sq x y z q <- sqTris ]
+        squaresFromTris = [ Sq x y z q | Sq x y z q <- sqTris ]
 {-
         -- Collect ones that are on the same plane.
         planeAligned = groupWith (\(Sq basis z _ _) -> (basis,z)) squares

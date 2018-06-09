@@ -7,9 +7,14 @@
 
 module Graphics.Implicit.Export.Render.HandlePolylines (cleanLoopsFromSegs, reducePolyline) where
 
-import Prelude(Bool(False), Maybe(Just, Nothing), otherwise, map, (.), filter, (==), last, reverse, ($), (++), tail, (-), (/), abs, (<=), (||), (&&), (*), (>), not, null)
+import           Prelude                       (Bool (False),
+                                                Maybe (Just, Nothing), abs,
+                                                filter, last, map, not, null,
+                                                otherwise, reverse, tail, ($),
+                                                (&&), (*), (++), (-), (.), (/),
+                                                (<=), (==), (>), (||))
 
-import Graphics.Implicit.Definitions (minℝ, Polyline, ℝ)
+import           Graphics.Implicit.Definitions (Polyline, ℝ, minℝ)
 
 cleanLoopsFromSegs :: [Polyline] -> [Polyline]
 cleanLoopsFromSegs =
@@ -30,23 +35,23 @@ joinSegs (present:remaining) =
         findNext ([] : _) = (Nothing, [])
     in
         case findNext remaining of
-            (Nothing, _) -> present:(joinSegs remaining)
+            (Nothing, _) -> present : joinSegs remaining
             (Just match, others) -> joinSegs $ (present ++ tail match): others
 
 reducePolyline :: [(ℝ, ℝ)] -> [(ℝ, ℝ)]
-reducePolyline ((x1,y1):(x2,y2):(x3,y3):others) =
-    if (x1,y1) == (x2,y2) then reducePolyline ((x2,y2):(x3,y3):others) else
-    if abs ( (y2-y1)/(x2-x1) - (y3-y1)/(x3-x1) ) <= minℝ
+reducePolyline ((x1,y1):(x2,y2):(x3,y3):others)
+  | (x1,y1) == (x2,y2) = reducePolyline ((x2,y2):(x3,y3):others)
+  | abs ( (y2-y1)/(x2-x1) - (y3-y1)/(x3-x1) ) <= minℝ
        || ( (x2-x1) == 0 && (x3-x1) == 0 && (y2-y1)*(y3-y1) > 0)
-    then reducePolyline ((x1,y1):(x3,y3):others)
-    else (x1,y1) : reducePolyline ((x2,y2):(x3,y3):others)
+    = reducePolyline ((x1,y1):(x3,y3):others)
+  | otherwise = (x1,y1) : reducePolyline ((x2,y2):(x3,y3):others)
 reducePolyline ((x1,y1):(x2,y2):others) =
     if (x1,y1) == (x2,y2) then reducePolyline ((x2,y2):others) else (x1,y1):(x2,y2):others
 reducePolyline l = l
 
 polylineNotNull :: [a] -> Bool
 polylineNotNull (_:l) = not (null l)
-polylineNotNull [] = False
+polylineNotNull []    = False
 
 {-cleanLoopsFromSegs =
     connectPolys

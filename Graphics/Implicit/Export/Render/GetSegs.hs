@@ -4,13 +4,18 @@
 
 module Graphics.Implicit.Export.Render.GetSegs (getSegs, getSegs') where
 
-import Prelude(Eq, Bool(True, False), sqrt, (+), (*), (/=), map, (.), filter, ($), (<=))
+import           Prelude                                    (Bool (False, True),
+                                                             Eq, filter, map,
+                                                             sqrt, ($), (*),
+                                                             (+), (.), (/=),
+                                                             (<=))
 
-import Graphics.Implicit.Definitions (ℝ, ℝ2, Obj2, Polyline)
-import Graphics.Implicit.Export.Render.RefineSegs (refine)
-import Graphics.Implicit.Export.Util (centroid)
+import           Graphics.Implicit.Definitions              (Obj2, Polyline, ℝ,
+                                                             ℝ2)
+import           Graphics.Implicit.Export.Render.RefineSegs (refine)
+import           Graphics.Implicit.Export.Util              (centroid)
 
-import Data.VectorSpace ((^-^))
+import           Data.VectorSpace                           ((^-^))
 
 {- The goal of getSegs is to create polylines to separate
    the interior and exterior vertices of a square intersecting
@@ -74,9 +79,9 @@ getSegs p1 p2 obj (x1y1, x2y1, x1y2, x2y2) (midx1V,midx2V,midy1V,midy2V) =
         midy2 = (midy2V, y + dy)
 
         notPointLine :: Eq a => [a] -> Bool
-        notPointLine (np1:np2:[]) = np1 /= np2
-        notPointLine [] = False
-        notPointLine [_] = False
+        notPointLine [np1, np2]          = np1 /= np2
+        notPointLine []                  = False
+        notPointLine [_]                 = False
         notPointLine (_ : (_ : (_ : _))) = False
 
         -- takes straight lines between mid points and subdivides them to

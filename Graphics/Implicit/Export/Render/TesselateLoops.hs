@@ -4,12 +4,24 @@
 
 module Graphics.Implicit.Export.Render.TesselateLoops (tesselateLoop) where
 
-import Prelude(Int, return, ($), length, (==), zip, init, tail, reverse, (<), (/), null, foldl1, (++), head, (*), abs, (>), (&&), (+), concatMap)
-import Graphics.Implicit.Definitions (ℝ, Obj3, ℝ3, Triangle, (⋅))
-import Graphics.Implicit.Export.Render.Definitions (TriSquare(Tris, Sq))
-import Graphics.Implicit.Export.Util (centroid)
-import Data.VectorSpace (normalized, (^-^), (^+^), magnitude, (^/), (^*))
-import Data.Cross (cross3)
+import           Data.Cross                                  (cross3)
+import           Data.VectorSpace                            (magnitude,
+                                                              normalized, (^*),
+                                                              (^+^), (^-^),
+                                                              (^/))
+import           Graphics.Implicit.Definitions               (Obj3, Triangle, ℝ,
+                                                              ℝ3, (⋅))
+import           Graphics.Implicit.Export.Render.Definitions (TriSquare (Sq, Tris))
+import           Graphics.Implicit.Export.Util               (centroid)
+import           Prelude                                     (Int, abs,
+                                                              concatMap, foldl1,
+                                                              head, init,
+                                                              length, null,
+                                                              return, reverse,
+                                                              tail, zip, ($),
+                                                              (&&), (*), (+),
+                                                              (++), (/), (<),
+                                                              (==), (>))
 
 tesselateLoop :: ℝ -> Obj3 -> [[ℝ3]] -> [TriSquare]
 
@@ -27,12 +39,12 @@ tesselateLoop _ _ [[a,b],[_,c],[_,_]] = return $ Tris [(a,b,c)]
 -}
 
 tesselateLoop res obj [[_,_], as@(_:_:_:_),[_,_], bs@(_:_:_:_)] | length as == length bs =
-    concatMap (tesselateLoop res obj) $
+    concatMap (tesselateLoop res obj)
         [[[a1,b1],[b1,b2],[b2,a2],[a2,a1]] | ((a1,b1),(a2,b2)) <- zip (init pairs) (tail pairs)]
             where pairs = zip (reverse as) bs
 
 tesselateLoop res obj [as@(_:_:_:_),[_,_], bs@(_:_:_:_), [_,_] ] | length as == length bs =
-    concatMap (tesselateLoop res obj) $
+    concatMap (tesselateLoop res obj)
         [[[a1,b1],[b1,b2],[b2,a2],[a2,a1]] | ((a1,b1),(a2,b2)) <- zip (init pairs) (tail pairs)]
             where pairs = zip (reverse as) bs
 
@@ -58,7 +70,7 @@ tesselateLoop _ _ [[a,_],[b,_],[c,_],[d,_]] | centroid [a,c] == centroid [b,d] =
 -}
 
 tesselateLoop res obj [[a,_],[b,_],[c,_],[d,_]] | obj (centroid [a,c]) < res/30 =
-    return $ Tris $ [(a,b,c),(a,c,d)]
+    return $ Tris [(a,b,c),(a,c,d)]
 
 -- Fallback case: make fans
 
@@ -71,7 +83,7 @@ tesselateLoop res obj pathSides = return $ Tris $
     else let
         mid@(_,_,_) = centroid path
         midval = obj mid
-        preNormal = foldl1 (^+^) $
+        preNormal = foldl1 (^+^)
             [ a `cross3` b | (a,b) <- zip path (tail path ++ [head path]) ]
         preNormalNorm = magnitude preNormal
         normal = preNormal ^/ preNormalNorm
