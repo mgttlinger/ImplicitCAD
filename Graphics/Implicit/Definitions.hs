@@ -75,7 +75,7 @@ import Prelude (Show, Double, Integer, Maybe, Either, show, (*), (/))
 
 import Data.VectorSpace (Scalar, InnerSpace, (<.>))
 
--- Let's make things a bit nicer. 
+-- Let's make things a bit nicer.
 -- Following the math notation ℝ, ℝ², ℝ³...
 -- Supports changing Float to Double for more precision!
 -- FIXME: what about using rationals instead of Float/Double?
@@ -194,7 +194,7 @@ data SymbolicObj2 =
     deriving Show
 
 -- | A symbolic 3D format!
-data SymbolicObj3 = 
+data SymbolicObj3 =
     -- Primitives
       Rect3R ℝ ℝ3 ℝ3
     | Sphere ℝ
@@ -238,4 +238,3 @@ type Rectilinear2 = [Box2]
 
 -- | Rectilinear 2D set
 type Rectilinear3 = [Box3]
-

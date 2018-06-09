@@ -18,14 +18,14 @@ import Graphics.Implicit.ExtOpenScad.Parser.Expr (expr0)
 import Data.Functor (($>))
 
 
-
+-- | Parses a whole scad program
 parseProgram :: SourceName -> String -> Either ParseError [StatementI]
 parseProgram = parse program
   where
     program :: Parser [StatementI]
     program = many1 computation <* eof
 
--- | A in our programming openscad-like programming language.
+-- | Parses a single statement in our openscad-like programming language.
 computation :: Parser StatementI
 computation =
   pad $ tryMany [ -- suite statements: no semicolon...
@@ -51,8 +51,7 @@ computation =
     ] <* stringGS " ; "
   *<|> pad userModule -- Modules
 
-{-
--- | A suite of s!
+{- | A suite of s!
 --   What's a suite? Consider:
 --
 --      union() {
@@ -91,7 +90,7 @@ namedWithLN n e = n ?: withLineNumber e
 throwAway :: Parser StatementI
 throwAway = withLineNumber $ genSpace *> oneOf "%*" *> genSpace *> computation $> DoNothing
 
--- An included ! Basically, inject another openscad file here...
+-- | An included ! Basically, inject another openscad file here...
 include :: Parser StatementI
 include = namedWithLN "include " (do
   injectVals <- (string "include" $> True )
@@ -99,7 +98,7 @@ include = namedWithLN "include " (do
   filename <- angles $ many (noneOf "<> ")
   pure $ Include filename injectVals)
 
--- | An assignment  (parser)
+-- | An assignment (parser)
 assignment :: Parser StatementI
 assignment = namedWithLN "assignment " ((:=) <$> patternMatcher <*> (equals *> expr0))
 
@@ -111,7 +110,7 @@ function = namedWithLN "function " (do
   valExpr <- equals *> expr0
   pure $ Name varSymb := LamE argVars valExpr)
 
--- | An echo  (parser)
+-- | An echo (parser)
 echo :: Parser StatementI
 echo = namedWithLN "echo " (Echo <$> (stringGS "echo" *> braces (commaSep expr0)))
 
@@ -196,4 +195,3 @@ moduleArgsUnitDecl = braces $ sepBy (
     symb <- variableSymb
     pure (symb, Nothing)
   ) (try comma)
-

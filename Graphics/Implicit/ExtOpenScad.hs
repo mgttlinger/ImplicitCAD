@@ -6,7 +6,7 @@
 
 module Graphics.Implicit.ExtOpenScad (runOpenscad) where
 
-import Prelude (Either(Left, Right), IO, String, ($), fmap)
+import Prelude (Either, IO, String, ($), (<$>))
 
 import Graphics.Implicit.Definitions (SymbolicObj2, SymbolicObj3)
 import Graphics.Implicit.ExtOpenScad.Definitions (VarLookup, OVal)
@@ -20,7 +20,9 @@ import qualified Control.Monad as Monad (mapM_)
 import qualified Control.Monad.State as State (runStateT)
 import qualified System.Directory as Dir (getCurrentDirectory)
 
--- Small wrapper to handle parse errors, etc.
+import Data.Bifunctor
+
+-- | Small wrapper to handle parse errors, etc.
 runOpenscad :: String -> Either Parsec.ParseError (IO (VarLookup, [SymbolicObj2], [SymbolicObj3]))
 runOpenscad s =
     let
@@ -28,12 +30,8 @@ runOpenscad s =
         rearrange :: (t, (t4, [OVal], t1, t2, t3)) -> (t4, [SymbolicObj2], [SymbolicObj3])
         rearrange (_, (varlookup, ovals, _ , _ , _)) = (varlookup, obj2s, obj3s) where
                                   (obj2s, obj3s, _ ) = divideObjs ovals
-    in case parseProgram "" s of
-        Left e -> Left e
-        Right sts -> Right
-            $ fmap rearrange
-            $ (\sts' -> do
-                path <- Dir.getCurrentDirectory
-                State.runStateT sts' (initial, [], path, (), () )
-            )
-            $ Monad.mapM_ runStatementI sts
+    in second (\sts -> rearrange <$> ((\sts' -> do
+                                         path <- Dir.getCurrentDirectory
+                                         State.runStateT sts' (initial, [], path, (), () )
+                                     ) $ Monad.mapM_ runStatementI sts)
+              ) $ parseProgram "" s

@@ -70,8 +70,8 @@ instance MonadPlus ArgParser where
     mplus a             b             = APBranch [ a   ,   b  ]
 
 instance Alternative ArgParser where
-        (<|>) = mplus
-        empty = mzero
+    (<|>) = mplus
+    empty = mzero
 
 type Symbol = String
 
@@ -79,41 +79,41 @@ data Pattern = Name  Symbol
              | ListP  [Pattern]
              | Wild
              | Symbol :@ Pattern
-    deriving (Show, Eq)
+             deriving (Show, Eq)
 
 data Expr = Var Symbol
           | LitE OVal
           | ListE [Expr]
           | LamE [Pattern] Expr
           | Expr :$ [Expr]
-    deriving (Show, Eq)
+          deriving (Show, Eq)
 
 data StatementI = StatementI Int (Statement StatementI)
-    deriving (Show, Eq)
+                deriving (Show, Eq)
 
 data Statement st = Include String Bool
-               | Pattern :=  Expr
-               | Echo [Expr]
-               | For Pattern Expr [st]
-               | If Expr [st] [st]
-               | NewModule  Symbol [(Symbol, Maybe Expr)] [st]
-               | ModuleCall Symbol [(Maybe Symbol, Expr)] [st]
-               | DoNothing
-    deriving (Show, Eq)
+                  | Pattern :=  Expr
+                  | Echo [Expr]
+                  | For Pattern Expr [st]
+                  | If Expr [st] [st]
+                  | NewModule  Symbol [(Symbol, Maybe Expr)] [st]
+                  | ModuleCall Symbol [(Maybe Symbol, Expr)] [st]
+                  | DoNothing
+                  deriving (Show, Eq)
 
 
 
 -- | Objects for our OpenSCAD-like language
 data OVal = OUndefined
-         | OError [String]
-         | OBool Bool
-         | ONum ℝ
-         | OList [OVal]
-         | OString String
-         | OFunc (OVal -> OVal)
-         | OModule ([OVal] -> ArgParser (IO [OVal]))
-         | OObj3 SymbolicObj3
-         | OObj2 SymbolicObj2
+          | OError [String]
+          | OBool Bool
+          | ONum ℝ
+          | OList [OVal]
+          | OString String
+          | OFunc (OVal -> OVal)
+          | OModule ([OVal] -> ArgParser (IO [OVal]))
+          | OObj3 SymbolicObj3
+          | OObj2 SymbolicObj2
 
 instance Eq OVal where
     (OBool a) == (OBool b) = a == b
@@ -143,4 +143,3 @@ collector s  l  = Var s :$ [ListE l]
 
 newtype TestInvariant = EulerCharacteristic Int
     deriving (Show)
-

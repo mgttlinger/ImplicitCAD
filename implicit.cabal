@@ -159,7 +159,7 @@ executable extopenscad
 --        -rtsopts
 --        -funfolding-use-threshold=16
 --       -fspec-constr-count=10
-               
+
 executable implicitsnap
 
    main-is: implicitsnap.hs

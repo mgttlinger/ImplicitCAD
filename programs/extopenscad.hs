@@ -4,6 +4,7 @@
 -- Released under the GNU GPL, see LICENSE
 
 -- FIXME: add support for AMF.
+
 -- An interpreter to run extended OpenScad code, outputing STL, OBJ, SVG, SCAD, PNG, or GCODE.
 
 -- Enable additional syntax to make our code more readable.
@@ -53,7 +54,7 @@ infixr 6 <>
 (<>) :: Monoid a => a -> a -> a
 (<>) = mappend
 
--- A datatype for containing our command line options.
+-- | Command line options.
 data ExtOpenScadOpts = ExtOpenScadOpts
     { outputFile :: Maybe FilePath
     , outputFormat :: Maybe OutputFormat
@@ -61,7 +62,7 @@ data ExtOpenScadOpts = ExtOpenScadOpts
     , inputFile :: FilePath
     }
 
--- A datatype enumerating our output file formats types.
+-- | Output file formats.
 data OutputFormat
     = SVG
     | SCAD
@@ -72,7 +73,7 @@ data OutputFormat
 --  | AMF
     deriving (Show, Eq, Ord)
 
--- A list mapping file extensions to output formats.
+-- | Mapping betwen file extensions and output formats.
 formatExtensions :: [(String, OutputFormat)]
 formatExtensions =
     [ ("svg", SVG)
@@ -85,7 +86,8 @@ formatExtensions =
 --  , ("amf", AMF)
     ]
 
--- Lookup an output format for a given output file. Throw an error if one cannot be found.
+-- | Lookup an output format for a given output file.
+-- Throw an error if one cannot be found.
 guessOutputFormat :: FilePath -> OutputFormat
 guessOutputFormat fileName =
     fromMaybe (error $ "Unrecognized output format: " <> ext)
@@ -93,7 +95,7 @@ guessOutputFormat fileName =
     where
         (_,ext) = splitExtension fileName
 
--- The parser for our command line arguments.
+-- | The parser for our command line arguments.
 extOpenScadOpts :: Parser ExtOpenScadOpts
 extOpenScadOpts = ExtOpenScadOpts
     <$> optional (
@@ -125,11 +127,12 @@ extOpenScadOpts = ExtOpenScadOpts
         <> help "Input extended OpenSCAD file"
         )
 
--- Try to look up an output format from a supplied extension.
+-- | Try to look up an output format from a supplied extension.
 readOutputFormat :: String -> Maybe OutputFormat
 readOutputFormat ext = lookup (map toLower ext) formatExtensions
 
--- A Read instance for our output format. Used by 'auto' in our command line parser.
+-- | Read instance for our output format.
+-- Used by 'auto' in our command line parser.
 -- Reads a string, and evaluates to the appropriate OutputFormat.
 instance Read OutputFormat where
     readsPrec _ myvalue =
@@ -140,7 +143,7 @@ instance Read OutputFormat where
                   then [(result, drop (length attempt) myvalue)]
                   else tryParse xs
 
--- Find the resolution to raytrace at.
+-- | Find the resolution to raytrace at.
 getRes :: (Map.Map [Char] OVal, [SymbolicObj2], [SymbolicObj3]) -> ℝ
 -- First, use a resolution specified by a variable in the input file.
 getRes (Map.lookup "$res" -> Just (ONum res), _, _) = res
@@ -165,29 +168,27 @@ getRes (varlookup, obj:_, _) =
 -- fallthrough value.
 getRes _ = 1
 
--- Output a file containing a 3D object.
-export3 :: Maybe OutputFormat -> ℝ -> FilePath -> SymbolicObj3 -> IO ()
-export3 posFmt res output obj =
-    case posFmt of
-        Just STL  -> writeBinSTL res output obj
-        Just SCAD -> writeSCAD3 res output obj
-        Just OBJ  -> writeOBJ res output obj
-        Just PNG  -> writePNG3 res output obj
-        Nothing   -> writeBinSTL res output obj
-        Just fmt  -> putStrLn $ "Unrecognized 3D format: "<>show fmt
+-- | Output a file containing a 3D object.
+export3 :: OutputFormat -> ℝ -> FilePath -> SymbolicObj3 -> IO ()
+export3 format res output obj =
+    case format of
+        STL  -> writeBinSTL res output obj
+        SCAD -> writeSCAD3 res output obj
+        OBJ  -> writeOBJ res output obj
+        PNG  -> writePNG3 res output obj
+        fmt  -> putStrLn $ "Unrecognized 3D format: "<> show fmt
 
--- Output a file containing a 2D object.
-export2 :: Maybe OutputFormat -> ℝ -> FilePath -> SymbolicObj2 -> IO ()
-export2 posFmt res output obj =
-    case posFmt of
-        Just SVG   -> writeSVG res output obj
-        Just SCAD  -> writeSCAD2 res output obj
-        Just PNG   -> writePNG2 res output obj
-        Just GCode -> writeGCodeHacklabLaser res output obj
-        Nothing    -> writeSVG res output obj
-        Just fmt   -> putStrLn $ "Unrecognized 2D format: "<>show fmt
+-- | Output a file containing a 2D object.
+export2 :: OutputFormat -> ℝ -> FilePath -> SymbolicObj2 -> IO ()
+export2 format res output obj =
+    case format of
+        SVG   -> writeSVG res output obj
+        SCAD  -> writeSCAD2 res output obj
+        PNG   -> writePNG2 res output obj
+        GCode -> writeGCodeHacklabLaser res output obj
+        fmt   -> putStrLn $ "Unrecognized 2D format: "<> show fmt
 
--- Interpret arguments, and render the object defined in the supplied input file.
+-- | Interpret arguments, and render the object defined in the supplied input file.
 run :: ExtOpenScadOpts -> IO()
 run args = do
 
@@ -219,7 +220,7 @@ run args = do
                     putStrLn $ "With resolution " ++ show res
                     putStrLn $ "In box " ++ show (getBox3 obj)
                     print obj
-                    export3 format res output obj
+                    export3 (fromMaybe STL format) res output obj
                 ([obj], []) -> do
                     let output = fromMaybe
                                      (basename ++ "." ++ fromMaybe "svg" posDefExt)
@@ -228,16 +229,17 @@ run args = do
                     putStrLn $ "With resolution " ++ show res
                     putStrLn $ "In box " ++ show (getBox2 obj)
                     print obj
-                    export2 format res output obj
+                    export2 (fromMaybe SVG format) res output obj
                 ([], []) -> putStrLn "No objects to render."
-                _        -> putStrLn "Multiple/No objects, what do you want to render?"
+                _        -> putStrLn "Multiple objects, what do you want to render?"
 
--- The entry point. Use the option parser then run the extended OpenScad code.
+-- | Entry point of the application.
+-- Use the option parser then run the extended OpenScad code.
 main :: IO()
 main = execParser opts >>= run
     where
-        opts= info (helper <*> extOpenScadOpts)
-              ( fullDesc
-              <> progDesc "ImplicitCAD: Extended OpenSCAD interpreter." 
-              <> header "extopenscad - Extended OpenSCAD"
-              )
+      opts = info (helper <*> extOpenScadOpts)
+             ( fullDesc
+               <> progDesc "ImplicitCAD: Extended OpenSCAD interpreter."
+               <> header "extopenscad - Extended OpenSCAD"
+             )
