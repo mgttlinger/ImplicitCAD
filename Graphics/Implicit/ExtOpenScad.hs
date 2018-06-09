@@ -6,21 +6,25 @@
 
 module Graphics.Implicit.ExtOpenScad (runOpenscad) where
 
-import Prelude (Either, IO, String, ($), (<$>))
+import           Prelude                                        (Either, IO,
+                                                                 String, ($),
+                                                                 (<$>))
 
-import Graphics.Implicit.Definitions (SymbolicObj2, SymbolicObj3)
-import Graphics.Implicit.ExtOpenScad.Definitions (VarLookup, OVal)
-import Graphics.Implicit.ExtOpenScad.Parser.Statement (parseProgram)
-import Graphics.Implicit.ExtOpenScad.Eval.Statement (runStatementI)
-import Graphics.Implicit.ExtOpenScad.Default (defaultObjects)
-import Graphics.Implicit.ExtOpenScad.Util.OVal (divideObjs)
+import           Graphics.Implicit.Definitions                  (SymbolicObj2,
+                                                                 SymbolicObj3)
+import           Graphics.Implicit.ExtOpenScad.Default          (defaultObjects)
+import           Graphics.Implicit.ExtOpenScad.Definitions      (OVal,
+                                                                 VarLookup)
+import           Graphics.Implicit.ExtOpenScad.Eval.Statement   (runStatementI)
+import           Graphics.Implicit.ExtOpenScad.Parser.Statement (parseProgram)
+import           Graphics.Implicit.ExtOpenScad.Util.OVal        (divideObjs)
 
-import qualified Text.Parsec.Error as Parsec (ParseError)
-import qualified Control.Monad as Monad (mapM_)
-import qualified Control.Monad.State as State (runStateT)
-import qualified System.Directory as Dir (getCurrentDirectory)
+import qualified Control.Monad                                  as Monad (mapM_)
+import qualified Control.Monad.State                            as State (runStateT)
+import qualified System.Directory                               as Dir (getCurrentDirectory)
+import qualified Text.Parsec.Error                              as Parsec (ParseError)
 
-import Data.Bifunctor
+import           Data.Bifunctor
 
 -- | Small wrapper to handle parse errors, etc.
 runOpenscad :: String -> Either Parsec.ParseError (IO (VarLookup, [SymbolicObj2], [SymbolicObj3]))
@@ -30,8 +34,8 @@ runOpenscad s =
         rearrange :: (t, (t4, [OVal], t1, t2, t3)) -> (t4, [SymbolicObj2], [SymbolicObj3])
         rearrange (_, (varlookup, ovals, _ , _ , _)) = (varlookup, obj2s, obj3s) where
                                   (obj2s, obj3s, _ ) = divideObjs ovals
-    in second (\sts -> rearrange <$> ((\sts' -> do
+    in second (\sts -> rearrange <$> (\sts' -> do
                                          path <- Dir.getCurrentDirectory
                                          State.runStateT sts' (initial, [], path, (), () )
-                                     ) $ Monad.mapM_ runStatementI sts)
+                                     ) (Monad.mapM_ runStatementI sts)
               ) $ parseProgram "" s
