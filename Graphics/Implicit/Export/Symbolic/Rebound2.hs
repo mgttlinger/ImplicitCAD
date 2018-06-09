@@ -4,11 +4,11 @@
 
 module Graphics.Implicit.Export.Symbolic.Rebound2 (rebound2) where
 
-import Prelude()
+import           Prelude                       ()
 
-import Graphics.Implicit.Definitions (BoxedObj2, ℝ2)
+import           Graphics.Implicit.Definitions (BoxedObj2, ℝ2)
 
-import Data.VectorSpace ((^-^), (^+^), (^/))
+import           Data.VectorSpace              ((^+^), (^-^), (^/))
 
 rebound2 :: BoxedObj2 -> BoxedObj2
 rebound2 (obj, (a,b)) =
@@ -16,4 +16,4 @@ rebound2 (obj, (a,b)) =
         d :: ℝ2
         d = (b ^-^ a) ^/ 10
     in
-        (obj, ((a ^-^ d), (b ^+^ d)))
+        (obj, (a ^-^ d, b ^+^ d))

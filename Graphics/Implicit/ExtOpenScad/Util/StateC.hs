@@ -3,19 +3,25 @@
 -- Released under the GNU AGPLV3+, see LICENSE
 
 -- FIXME: required. why?
-{-# LANGUAGE KindSignatures, FlexibleContexts #-}
-{-# LANGUAGE RankNTypes, ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Graphics.Implicit.ExtOpenScad.Util.StateC (getVarLookup, modifyVarLookup, lookupVar, pushVals, getVals, putVals, withPathShiftedBy, getPath, getRelPath, errorC, mapMaybeM, StateC) where
 
-import Prelude(FilePath, IO, String, Maybe(Just, Nothing), Show, Monad, (.), ($), (<$>), (++), return, putStrLn, show)
+import           Prelude                                   (FilePath, IO, Maybe (Just, Nothing),
+                                                            Monad, Show, String,
+                                                            putStrLn, return,
+                                                            show, ($), (++),
+                                                            (.), (<$>))
 
-import Graphics.Implicit.ExtOpenScad.Definitions(VarLookup, OVal)
+import           Graphics.Implicit.ExtOpenScad.Definitions (OVal, VarLookup)
 
-import qualified Data.Map as Map
-import Control.Monad.State (StateT, get, gets, put, modify, liftIO)
-import System.FilePath((</>))
-import Control.Monad.IO.Class (MonadIO)
+import           Control.Monad.IO.Class                    (MonadIO)
+import           Control.Monad.State                       (StateT, get, gets,
+                                                            liftIO, modify, put)
+import qualified Data.Map                                  as Map
+import           System.FilePath                           ((</>))
 
 type CompState = (VarLookup, [OVal], FilePath, (), ())
 type StateC = StateT CompState IO
@@ -27,7 +33,7 @@ modifyVarLookup :: (VarLookup -> VarLookup) -> StateC ()
 modifyVarLookup = modify . (\f (a,b,c,d,e) -> (f a, b, c, d, e))
 
 lookupVar :: String -> StateC (Maybe OVal)
-lookupVar name = do Map.lookup name <$> getVarLookup
+lookupVar name = Map.lookup name <$> getVarLookup
 
 pushVals :: [OVal] -> StateC ()
 pushVals vals = modify (\(a,b,c,d,e) -> (a, vals ++ b,c,d,e))
@@ -65,5 +71,5 @@ errorC :: (Show a, MonadIO m) => a -> String -> m ()
 errorC lineN err = liftIO $ putStrLn $ "At " ++ show lineN ++ ": " ++ err
 
 mapMaybeM :: Monad m => (t -> m a) -> Maybe t -> m (Maybe a)
-mapMaybeM f (Just a) = do Just <$> f a
-mapMaybeM _ Nothing = return Nothing
+mapMaybeM f (Just a) = Just <$> f a
+mapMaybeM _ Nothing  = return Nothing
